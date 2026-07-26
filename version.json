@@ -1,7 +1,7 @@
 {
-  "versionCode": 31,
-  "versionName": "3.1 OTA-Test",
+  "versionCode": 32,
+  "versionName": "3.2 OTA-Test",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk",
-  "sha256": "49e56d51376922e3d549730035e105ffc7a885addc02177e26744d0be7cbce7d",
-  "notes": "Erster Test der DennisOS-Aktualisierung über WLAN."
+  "sha256": "fd4169c808a8d7d68d0ac6eb2f6e346e4b3dc1cce47327006020e71f8ac0d819",
+  "notes": "OTA-Speicherproblem auf dem Tolino behoben."
 }
