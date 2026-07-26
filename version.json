@@ -1,7 +1,7 @@
 {
-  "versionCode": 33,
-  "versionName": "3.3.1 UI und Einstellungen",
+  "versionCode": 34,
+  "versionName": "3.3.2 OTA-Test",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk",
-  "sha256": "83dfc405a216ed06f70a17a3bd30b12158ad1058dafe6092601aefec9ad5c4ab",
+  "sha256": "a0cea0cad4f5c295ef944e6c35e0f4c2620f11c10572944ecd910ac171b00e55",
   "notes": "Compilerfehler behoben. Vollbild-Einstellungen, Helligkeitsregler, Nachtzeiten, eigene Update-Suche, bessere Wetterdetails und mehr sichtbare Kalendereinträge."
 }
