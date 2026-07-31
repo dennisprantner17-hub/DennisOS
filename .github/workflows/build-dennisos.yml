@@ -79,6 +79,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp DennisOS-update.apk /tmp/DennisOS-update.apk
+          git restore DennisOS-update.apk
+          git pull --rebase origin main
+          cp /tmp/DennisOS-update.apk DennisOS-update.apk
           git add DennisOS-update.apk
           git diff --cached --quiet || git commit -m "DennisOS APK automatisch bauen"
           APK_COMMIT=$(git rev-parse HEAD)
