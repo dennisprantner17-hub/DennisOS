@@ -20,7 +20,7 @@ const page = await browser.newPage({
   viewport: { width: 2400, height: 1600 },
   // iCloud zeigt die Fotos in der Webansicht nur relativ klein an. Eine hohe
   // Ausgabedichte erhält beim Screenshot genügend Pixel für das Tolino-Display.
-  deviceScaleFactor: 4
+  deviceScaleFactor: 3
 });
 await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 90000 });
 await page.waitForFunction(
@@ -31,7 +31,10 @@ await page.waitForFunction(
 await page.waitForTimeout(5000);
 
 const gridImages = page.locator('img[src^="blob:"]');
-const albumCount = Math.max(1, await gridImages.count());
+const albumCount = Math.max(
+  1,
+  await gridImages.evaluateAll((images) => new Set(images.map((image) => image.src)).size)
+);
 await gridImages.first().click();
 await page.waitForTimeout(3000);
 
