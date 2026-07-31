@@ -7,6 +7,10 @@ on:
     paths-ignore:
       - DennisOS-update.apk
       - version.json
+      - screensaver.json
+      - screensaver/**
+      - scripts/**
+      - .github/workflows/sync-screensaver.yml
 
 permissions:
   contents: write
