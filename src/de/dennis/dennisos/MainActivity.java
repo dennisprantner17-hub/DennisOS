@@ -3989,12 +3989,15 @@ public class MainActivity extends Activity {
                 lower,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        1
+                        220
                 )
         );
 
-        weatherDialog.setContentView(page);
+        ScrollView weatherScroll = new ScrollView(this);
+        weatherScroll.setFillViewport(true);
+        weatherScroll.setBackgroundColor(Color.WHITE);
+        weatherScroll.addView(page);
+        weatherDialog.setContentView(weatherScroll);
 
         weatherDialog.setOnDismissListener(
                 new DialogInterface.OnDismissListener() {

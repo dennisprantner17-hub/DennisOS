@@ -8,7 +8,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
 
 public class CalendarSync {
 
@@ -212,6 +217,9 @@ public class CalendarSync {
         String description = "";
         String location = "";
         String attendees = "";
+        String recurrenceRule = "";
+        HashSet<String> excludedDates =
+                new HashSet<String>();
 
         for (String line : lines) {
             if ("BEGIN:VEVENT".equals(line)) {
@@ -224,6 +232,8 @@ public class CalendarSync {
                 description = "";
                 location = "";
                 attendees = "";
+                recurrenceRule = "";
+                excludedDates.clear();
                 continue;
             }
 
@@ -239,15 +249,16 @@ public class CalendarSync {
                                     endAllDay
                             );
 
-                    events.add(
-                            new CalendarEvent(
-                                    unescapeText(title),
-                                    startDate,
-                                    normalizedEnd,
-                                    unescapeText(description),
-                                    unescapeText(location),
-                                    unescapeText(attendees)
-                            )
+                    addEventOccurrences(
+                            events,
+                            unescapeText(title),
+                            startDate,
+                            normalizedEnd,
+                            unescapeText(description),
+                            unescapeText(location),
+                            unescapeText(attendees),
+                            recurrenceRule,
+                            excludedDates
                     );
                 }
 
@@ -314,10 +325,173 @@ public class CalendarSync {
                                 "mailto:",
                                 ""
                         );
+            } else if (line.startsWith("RRULE")) {
+                recurrenceRule = valueAfterColon(line);
+
+            } else if (line.startsWith("EXDATE")) {
+                String[] values = valueAfterColon(line).split(",");
+                for (String value : values) {
+                    String excluded = parseDateKey(value);
+                    if (excluded.length() > 0) {
+                        excludedDates.add(excluded);
+                    }
+                }
             }
         }
 
         return events;
+    }
+
+    private static void addEventOccurrences(
+            ArrayList<CalendarEvent> events,
+            String title,
+            String startDate,
+            String endDateExclusive,
+            String description,
+            String location,
+            String attendees,
+            String recurrenceRule,
+            HashSet<String> excludedDates
+    ) {
+        if (recurrenceRule == null
+                || recurrenceRule.length() == 0
+                || !recurrenceRule.contains("FREQ=WEEKLY")) {
+            if (!excludedDates.contains(startDate)) {
+                events.add(new CalendarEvent(
+                        title,
+                        startDate,
+                        endDateExclusive,
+                        description,
+                        location,
+                        attendees
+                ));
+            }
+            return;
+        }
+
+        try {
+            SimpleDateFormat format = new SimpleDateFormat(
+                    "yyyyMMdd",
+                    Locale.US
+            );
+            format.setLenient(false);
+
+            Date parsedStart = format.parse(startDate);
+            Date parsedEnd = format.parse(endDateExclusive);
+            long durationDays = Math.max(
+                    1L,
+                    (parsedEnd.getTime() - parsedStart.getTime())
+                            / (24L * 60L * 60L * 1000L)
+            );
+
+            int interval = ruleInt(
+                    recurrenceRule,
+                    "INTERVAL",
+                    1
+            );
+            int maximumCount = ruleInt(
+                    recurrenceRule,
+                    "COUNT",
+                    Integer.MAX_VALUE
+            );
+            String until = ruleValue(
+                    recurrenceRule,
+                    "UNTIL"
+            );
+            String untilDate = parseDateKey(until);
+
+            Calendar earliest = Calendar.getInstance();
+            earliest.add(Calendar.YEAR, -1);
+            String earliestKey = format.format(earliest.getTime());
+
+            Calendar latest = Calendar.getInstance();
+            latest.add(Calendar.YEAR, 2);
+            String latestKey = format.format(latest.getTime());
+
+            Calendar occurrence = Calendar.getInstance();
+            occurrence.setTime(parsedStart);
+
+            int generatedCount = 0;
+            while (generatedCount < maximumCount) {
+                String occurrenceStart = format.format(
+                        occurrence.getTime()
+                );
+
+                if (occurrenceStart.compareTo(latestKey) > 0
+                        || (untilDate.length() > 0
+                        && occurrenceStart.compareTo(untilDate) > 0)) {
+                    break;
+                }
+
+                if (occurrenceStart.compareTo(earliestKey) >= 0
+                        && !excludedDates.contains(occurrenceStart)) {
+                    Calendar occurrenceEnd = (Calendar) occurrence.clone();
+                    occurrenceEnd.add(
+                            Calendar.DAY_OF_MONTH,
+                            (int) durationDays
+                    );
+
+                    events.add(new CalendarEvent(
+                            title,
+                            occurrenceStart,
+                            format.format(occurrenceEnd.getTime()),
+                            description,
+                            location,
+                            attendees
+                    ));
+                }
+
+                generatedCount++;
+                occurrence.add(
+                        Calendar.DAY_OF_MONTH,
+                        7 * Math.max(1, interval)
+                );
+            }
+        } catch (Exception ignored) {
+            if (!excludedDates.contains(startDate)) {
+                events.add(new CalendarEvent(
+                        title,
+                        startDate,
+                        endDateExclusive,
+                        description,
+                        location,
+                        attendees
+                ));
+            }
+        }
+    }
+
+    private static int ruleInt(
+            String rule,
+            String name,
+            int fallback
+    ) {
+        try {
+            String value = ruleValue(rule, name);
+            return value.length() == 0
+                    ? fallback
+                    : Integer.parseInt(value);
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
+    private static String ruleValue(
+            String rule,
+            String name
+    ) {
+        if (rule == null) {
+            return "";
+        }
+
+        String prefix = name + "=";
+        String[] parts = rule.split(";");
+        for (String part : parts) {
+            if (part.startsWith(prefix)) {
+                return part.substring(prefix.length());
+            }
+        }
+        return "";
     }
 
     private static String valueAfterColon(
