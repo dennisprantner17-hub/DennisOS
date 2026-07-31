@@ -3,5 +3,5 @@
   "versionName": "3.4.17",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=52",
   "sha256": "a90353370901bf126f73b1e0e881be597a05b0c550253003140e61054752e21c",
-  "notes": "Neue Wetterwarnkarte für Am Katzelbach 21: Warnstufe, Art und Zeitraum erscheinen nur bei aktiven Warnungen. Antippen öffnet Auswirkungen, Empfehlungen und weitere Details im Vollbild."
+  "notes": "Warnungen erscheinen jetzt zuerst als kurze Tagesliste und lassen sich einzeln aufklappen. Neu sind außerdem ein zufälliger iCloud-Foto-Bildschirmschoner sowie übersichtliche Untermenüs für Licht, Nachtmodus, Bildschirmschoner, Synchronisierung und Updates."
 }
