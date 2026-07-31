@@ -33,12 +33,32 @@ for (let pass = 0; pass < 4; pass++) {
 }
 await page.waitForTimeout(5000);
 
-const imageLocators = page.locator('img[src^="blob:"]');
-const imageCount = await imageLocators.count();
+const albumCountText = await page.getByRole("heading", {
+  name: /Elemente/
+}).textContent();
+const albumCount = Number((albumCountText || "1").match(/\d+/)?.[0] || 1);
+
+const gridImages = page.locator('img[src^="blob:"]');
+await gridImages.first().click();
+await page.waitForTimeout(3000);
+
 const imageUrls = [];
-for (let index = 0; index < imageCount; index++) {
+for (let index = 0; index < albumCount; index++) {
   const fileName = `icloud-${index + 1}.jpg`;
-  await imageLocators.nth(index).screenshot({
+  const candidates = page.locator('img[src^="blob:"]');
+  let largest = candidates.first();
+  let largestArea = 0;
+  for (let candidateIndex = 0; candidateIndex < await candidates.count(); candidateIndex++) {
+    const candidate = candidates.nth(candidateIndex);
+    if (!(await candidate.isVisible())) continue;
+    const box = await candidate.boundingBox();
+    const area = box ? box.width * box.height : 0;
+    if (area > largestArea) {
+      largest = candidate;
+      largestArea = area;
+    }
+  }
+  await largest.screenshot({
     path: path.join(outputDirectory, fileName),
     type: "jpeg",
     quality: 88
@@ -46,6 +66,8 @@ for (let index = 0; index < imageCount; index++) {
   imageUrls.push(
     `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
   );
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(2500);
 }
 
 await browser.close();
