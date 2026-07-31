@@ -1,7 +1,7 @@
 {
-  "versionCode": 79,
-  "versionName": "4.0.0",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/0e57e9eb9234dcb74ebc9cf56563f598bcea7969/DennisOS-update.apk",
-  "sha256": "764f274fd1eeb69de7ffcddfc2db3ef0ee73ec194bcda68f4562cae9fe265888",
-  "notes": "Bildschirmschoner-Schalter, Lichtsteuerung und automatische Rückkehr wurden repariert. Links und rechts wechseln das Foto, die Mitte führt zur Startseite."
+  "versionCode": 42,
+  "versionName": "3.4.7",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=42",
+  "sha256": "129272340232d7f82b22371adbce84c1911c2da9a3661fa60a436aba95f9d66f",
+  "notes": "DennisOS 4.0 führt ein neues Apps-Menü mit Formel 1, ORF-News, Tageshoroskop und offiziellen österreichischen Lottozahlen ein."
 }
