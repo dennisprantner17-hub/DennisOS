@@ -1,7 +1,7 @@
 {
-  "versionCode": 46,
-  "versionName": "3.4.11",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=46",
-  "sha256": "882d7a84eb3cc363603a08124802215fcd453203d9882ed3898cde595b1691b3",
+  "versionCode": 52,
+  "versionName": "3.4.17",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=52",
+  "sha256": "a90353370901bf126f73b1e0e881be597a05b0c550253003140e61054752e21c",
   "notes": "Neue Wetterwarnkarte für Am Katzelbach 21: Warnstufe, Art und Zeitraum erscheinen nur bei aktiven Warnungen. Antippen öffnet Auswirkungen, Empfehlungen und weitere Details im Vollbild."
 }
