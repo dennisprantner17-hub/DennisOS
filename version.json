@@ -1,7 +1,7 @@
 {
-  "versionCode": 44,
-  "versionName": "3.4.9",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=44",
-  "sha256": "bfa10e82d28d1965a7d8ed343ecb03015ca9a20e86ef66f197298c2da9f5621a",
+  "versionCode": 46,
+  "versionName": "3.4.11",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=46",
+  "sha256": "882d7a84eb3cc363603a08124802215fcd453203d9882ed3898cde595b1691b3",
   "notes": "Der Update-Download funktioniert jetzt auch auf Tolino-Geräten, deren SD-Karten-Appordner gesperrt sind. DennisOS verwendet dafür automatisch einen sicheren internen Speicherort."
 }
