@@ -18,7 +18,7 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({
   locale: "de-AT",
   viewport: { width: 2400, height: 1600 },
-  deviceScaleFactor: 1
+  deviceScaleFactor: 3
 });
 await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 90000 });
 await page.waitForFunction(
@@ -55,7 +55,7 @@ for (let index = 0; index < 500; index++) {
   await largest.screenshot({
     path: path.join(outputDirectory, fileName),
     type: "jpeg",
-    quality: 88
+    quality: 95
   });
   imageUrls.push(
     `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
