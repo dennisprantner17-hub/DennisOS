@@ -73,7 +73,16 @@ jobs:
         run: |
           cp build/outputs/apk/debug/DennisOS-debug.apk DennisOS-update.apk
           SHA256=$(sha256sum DennisOS-update.apk | cut -d ' ' -f 1)
-          python3 - "$SHA256" <<'PY'
+          echo "DENNISOS_APK_SHA256=$SHA256" >> "$GITHUB_ENV"
+
+      - name: Fertiges Update veröffentlichen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DennisOS-update.apk
+          git diff --cached --quiet || git commit -m "DennisOS APK automatisch bauen"
+          APK_COMMIT=$(git rev-parse HEAD)
+          python3 - "$APK_COMMIT" <<'PY'
           import json
           import os
           import sys
@@ -84,22 +93,16 @@ jobs:
           data["versionCode"] = int(os.environ["DENNISOS_VERSION_CODE"])
           data["versionName"] = os.environ["DENNISOS_VERSION_NAME"]
           data["apkUrl"] = (
-              "https://github.com/dennisprantner17-hub/DennisOS/"
-              "raw/refs/heads/main/DennisOS-update.apk?download=1&"
-              f"v={data['versionCode']}"
+              "https://raw.githubusercontent.com/dennisprantner17-hub/"
+              f"DennisOS/{sys.argv[1]}/DennisOS-update.apk"
           )
-          data["sha256"] = sys.argv[1]
+          data["sha256"] = os.environ["DENNISOS_APK_SHA256"]
           with open(path, "w", encoding="utf-8") as file:
               json.dump(data, file, ensure_ascii=False, indent=2)
               file.write("\n")
           PY
-
-      - name: Fertiges Update veröffentlichen
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add DennisOS-update.apk version.json
-          git diff --cached --quiet || git commit -m "DennisOS Update automatisch bauen"
+          git add version.json
+          git diff --cached --quiet || git commit -m "DennisOS Versionsdatei automatisch aktualisieren"
           git restore gradlew
           git push
 
