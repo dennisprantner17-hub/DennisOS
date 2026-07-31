@@ -141,6 +141,7 @@ public class MainActivity extends Activity {
     private boolean autoLightSleeping = false;
     private boolean syncRunning = false;
     private boolean updateCheckRequestedByUser = false;
+    private boolean automaticUpdatesEnabled = false;
 
     private GestureDetector gestureDetector;
 
@@ -2553,6 +2554,9 @@ public class MainActivity extends Activity {
         autoLightOffMinutes = preferences.getInt(
                 "auto_light_off_minutes", 5
         );
+        automaticUpdatesEnabled = preferences.getBoolean(
+                "automatic_updates_enabled", false
+        );
     }
 
     private void saveDisplaySettings() {
@@ -2574,6 +2578,7 @@ public class MainActivity extends Activity {
         editor.putInt("screensaver_light_end", screensaverLightEndHour);
         editor.putBoolean("auto_light_off_enabled", autoLightOffEnabled);
         editor.putInt("auto_light_off_minutes", autoLightOffMinutes);
+        editor.putBoolean("automatic_updates_enabled", automaticUpdatesEnabled);
 
         for (int index = 0;
              index < 7;
@@ -2902,7 +2907,7 @@ public class MainActivity extends Activity {
                 "Nach einer neuen DennisOS-Version suchen",
                 new View.OnClickListener() {
                     @Override public void onClick(View view) {
-                        UpdateManager.checkForUpdate(MainActivity.this, true);
+                        showUpdateSettings();
                     }
                 }
         ));
@@ -3122,6 +3127,58 @@ public class MainActivity extends Activity {
         params.setMargins(80, 14, 80, 4);
         button.setLayoutParams(params);
         return button;
+    }
+
+    private void showUpdateSettings() {
+        if (settingsDialog != null && settingsDialog.isShowing()) {
+            settingsDialog.dismiss();
+        }
+        settingsDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+        LinearLayout page = createSettingsPage("Updates");
+
+        final TextView automatic = createSettingsMenuButtonText(
+                "Automatische Updates: "
+                        + (automaticUpdatesEnabled ? "EIN" : "AUS")
+        );
+        automatic.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                automaticUpdatesEnabled = !automaticUpdatesEnabled;
+                automatic.setText("Automatische Updates: "
+                        + (automaticUpdatesEnabled ? "EIN" : "AUS"));
+                saveDisplaySettings();
+            }
+        });
+        page.addView(automatic);
+
+        TextView manual = createSettingsMenuButtonText(
+                "Jetzt nach Update suchen"
+        );
+        manual.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                UpdateManager.checkForUpdate(MainActivity.this, true, false);
+            }
+        });
+        page.addView(manual);
+
+        TextView info = createSettingLabel(
+                "Bei EIN wird ein neues Update automatisch geladen und der "
+                        + "Android-Installer geöffnet. Die Installation muss "
+                        + "aus Sicherheitsgründen noch bestätigt werden."
+        );
+        info.setGravity(Gravity.CENTER);
+        info.setPadding(30, 22, 30, 0);
+        page.addView(info);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(page);
+        settingsDialog.setContentView(scroll);
+        settingsDialog.show();
+        applyDialogBrightness(settingsDialog);
+        scheduleAutomaticReset();
     }
 
     private void showLightSettings() {
@@ -4042,7 +4099,8 @@ public class MainActivity extends Activity {
 
         UpdateManager.checkForUpdate(
                 MainActivity.this,
-                updateCheckRequestedByUser
+                updateCheckRequestedByUser,
+                automaticUpdatesEnabled && !updateCheckRequestedByUser
         );
 
         updateCheckRequestedByUser = false;
