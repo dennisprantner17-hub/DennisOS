@@ -26,42 +26,33 @@ await page.waitForFunction(
   { timeout: 90000 }
 );
 
-const gridImages = page.locator('img[src^="blob:"]');
-await gridImages.first().click({ force: true });
-await page.waitForTimeout(3000);
-
 const imageUrls = [];
 const seenImageSources = new Set();
-for (let index = 0; index < 500; index++) {
-  const fileName = `icloud-${index + 1}.jpg`;
+let unchangedPasses = 0;
+while (seenImageSources.size < 500 && unchangedPasses < 4) {
+  const beforePass = seenImageSources.size;
   const candidates = page.locator('img[src^="blob:"]');
-  let largest = candidates.first();
-  let largestArea = 0;
   for (let candidateIndex = 0; candidateIndex < await candidates.count(); candidateIndex++) {
     const candidate = candidates.nth(candidateIndex);
     if (!(await candidate.isVisible())) continue;
-    const box = await candidate.boundingBox();
-    const area = box ? box.width * box.height : 0;
-    if (area > largestArea) {
-      largest = candidate;
-      largestArea = area;
-    }
+    const imageSource = await candidate.getAttribute("src");
+    if (!imageSource || seenImageSources.has(imageSource)) continue;
+    seenImageSources.add(imageSource);
+    const fileName = `icloud-${seenImageSources.size}.jpg`;
+    await candidate.screenshot({
+      path: path.join(outputDirectory, fileName),
+      type: "jpeg",
+      quality: 95
+    });
+    imageUrls.push(
+      `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
+    );
   }
-  const imageSource = await largest.getAttribute("src");
-  if (!imageSource || seenImageSources.has(imageSource)) {
-    break;
-  }
-  seenImageSources.add(imageSource);
-  await largest.screenshot({
-    path: path.join(outputDirectory, fileName),
-    type: "jpeg",
-    quality: 95
-  });
-  imageUrls.push(
-    `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
-  );
-  await page.keyboard.press("ArrowRight");
-  await page.waitForTimeout(2500);
+  unchangedPasses = seenImageSources.size == beforePass
+    ? unchangedPasses + 1
+    : 0;
+  await page.mouse.wheel(0, 1200);
+  await page.waitForTimeout(2000);
 }
 
 await browser.close();
