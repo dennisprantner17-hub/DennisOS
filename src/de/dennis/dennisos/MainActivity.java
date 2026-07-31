@@ -69,6 +69,7 @@ public class MainActivity extends Activity {
     private TextView clockText;
     private TextView dateText;
     private TextView currentWeatherText;
+    private TextView warningCard;
     private TextView syncText;
     private TextView countdownText;
     private TextView batteryText;
@@ -81,6 +82,7 @@ public class MainActivity extends Activity {
     private AlertDialog dayDialog;
     private Dialog fullscreenDayDialog;
     private Dialog weatherDialog;
+    private Dialog warningDialog;
     private Dialog settingsDialog;
 
     private final Handler clockHandler = new Handler();
@@ -105,6 +107,9 @@ public class MainActivity extends Activity {
 
     private ArrayList<WeatherForecastSync.ForecastDay> forecastDays =
             new ArrayList<WeatherForecastSync.ForecastDay>();
+
+    private ArrayList<WarningSync.WeatherWarning> currentWarnings =
+            new ArrayList<WarningSync.WeatherWarning>();
 
     private int navigationOffsetWeeks = 0;
     private int activeView = VIEW_CALENDAR;
@@ -274,6 +279,13 @@ public class MainActivity extends Activity {
                         | Gravity.CENTER_VERTICAL
         );
 
+        leftButtons.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+
         leftButtons.addView(lightButton);
 
         settingsButton =
@@ -298,6 +310,31 @@ public class MainActivity extends Activity {
         );
 
         leftButtons.addView(settingsButton);
+
+        warningCard = new TextView(this);
+        warningCard.setTextSize(11);
+        warningCard.setTextColor(Color.BLACK);
+        warningCard.setGravity(Gravity.CENTER);
+        warningCard.setPadding(6, 3, 6, 3);
+        warningCard.setVisibility(View.GONE);
+        warningCard.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        0,
+                        66,
+                        1
+                )
+        );
+        warningCard.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        showWarningFullscreen();
+                        scheduleAutomaticReset();
+                    }
+                }
+        );
+
+        leftButtons.addView(warningCard);
         left.addView(leftButtons);
 
         LinearLayout center =
@@ -3253,6 +3290,26 @@ public class MainActivity extends Activity {
                 }
         );
 
+        WarningSync.sync(
+                new WarningSync.Callback() {
+                    @Override
+                    public void onFinished(
+                            ArrayList<WarningSync.WeatherWarning> warnings
+                    ) {
+                        currentWarnings = warnings;
+                        updateWarningCard();
+                    }
+
+                    @Override
+                    public void onError(
+                            Exception exception
+                    ) {
+                        currentWarnings.clear();
+                        updateWarningCard();
+                    }
+                }
+        );
+
         CalendarSync.sync(
                 this,
                 new CalendarSync.Callback() {
@@ -3418,6 +3475,245 @@ public class MainActivity extends Activity {
                 },
                 2200L
         );
+    }
+
+    private void updateWarningCard() {
+        if (warningCard == null) {
+            return;
+        }
+
+        if (currentWarnings == null
+                || currentWarnings.size() == 0) {
+            warningCard.setText("");
+            warningCard.setVisibility(View.GONE);
+            return;
+        }
+
+        WarningSync.WeatherWarning warning =
+                highestWarning();
+
+        String period = formatWarningTime(
+                warning.getStartSeconds()
+        ) + " – " + formatWarningTime(
+                warning.getEndSeconds()
+        );
+
+        String more = currentWarnings.size() > 1
+                ? "  (+" + (currentWarnings.size() - 1) + ")"
+                : "";
+
+        warningCard.setText(
+                WarningSync.levelName(warning.getLevel())
+                        + " · "
+                        + WarningSync.typeName(warning.getType())
+                        + more
+                        + "\n"
+                        + period
+        );
+
+        warningCard.setBackground(
+                createBorderDrawable(
+                        warningBackgroundColor(warning.getLevel()),
+                        Color.DKGRAY,
+                        2
+                )
+        );
+        warningCard.setVisibility(View.VISIBLE);
+    }
+
+    private WarningSync.WeatherWarning highestWarning() {
+        WarningSync.WeatherWarning selected =
+                currentWarnings.get(0);
+
+        for (WarningSync.WeatherWarning warning : currentWarnings) {
+            if (warning.getLevel() > selected.getLevel()
+                    || (warning.getLevel() == selected.getLevel()
+                    && warning.getStartSeconds()
+                    < selected.getStartSeconds())) {
+                selected = warning;
+            }
+        }
+
+        return selected;
+    }
+
+    private int warningBackgroundColor(int level) {
+        if (level >= 3) {
+            return Color.rgb(235, 125, 125);
+        }
+        if (level == 2) {
+            return Color.rgb(245, 185, 105);
+        }
+        return Color.rgb(250, 230, 120);
+    }
+
+    private String formatWarningTime(long seconds) {
+        if (seconds <= 0L) {
+            return "?";
+        }
+
+        return new SimpleDateFormat(
+                "dd.MM. HH:mm",
+                Locale.GERMAN
+        ).format(new Date(seconds * 1000L));
+    }
+
+    private void showWarningFullscreen() {
+        if (currentWarnings == null
+                || currentWarnings.size() == 0) {
+            return;
+        }
+
+        if (warningDialog != null
+                && warningDialog.isShowing()) {
+            warningDialog.dismiss();
+        }
+
+        warningDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+
+        LinearLayout page = new LinearLayout(this);
+        page.setOrientation(LinearLayout.VERTICAL);
+        page.setBackgroundColor(Color.WHITE);
+        page.setPadding(18, 10, 18, 12);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView close = new TextView(this);
+        close.setText("×");
+        close.setTextSize(36);
+        close.setTextColor(Color.BLACK);
+        close.setGravity(Gravity.CENTER);
+        close.setLayoutParams(new LinearLayout.LayoutParams(64, 64));
+        close.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        warningDialog.dismiss();
+                    }
+                }
+        );
+
+        TextView title = new TextView(this);
+        title.setText("Wetterwarnungen · Am Katzelbach 21");
+        title.setTextSize(25);
+        title.setTextColor(Color.BLACK);
+        title.setGravity(Gravity.CENTER_VERTICAL);
+        title.setPadding(12, 0, 0, 0);
+        title.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        0,
+                        64,
+                        1
+                )
+        );
+
+        header.addView(close);
+        header.addView(title);
+        page.addView(header);
+        page.addView(createHorizontalLine());
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(0, 10, 0, 20);
+
+        for (WarningSync.WeatherWarning warning : currentWarnings) {
+            list.addView(createWarningDetail(warning));
+        }
+
+        scroll.addView(list);
+        page.addView(
+                scroll,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        0,
+                        1
+                )
+        );
+
+        warningDialog.setContentView(page);
+        warningDialog.setOnDismissListener(
+                new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        applyNightBrightness();
+                        scheduleAutomaticReset();
+                    }
+                }
+        );
+        warningDialog.show();
+        applyDialogBrightness(warningDialog);
+    }
+
+    private View createWarningDetail(
+            WarningSync.WeatherWarning warning
+    ) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(18, 12, 18, 16);
+        card.setBackground(
+                createBorderDrawable(
+                        warningBackgroundColor(warning.getLevel()),
+                        Color.DKGRAY,
+                        2
+                )
+        );
+
+        TextView heading = createWeatherText(
+                WarningSync.levelName(warning.getLevel())
+                        + " · "
+                        + WarningSync.typeName(warning.getType()),
+                23,
+                Color.BLACK
+        );
+        heading.setPadding(0, 0, 0, 5);
+        card.addView(heading);
+
+        TextView period = createWeatherText(
+                "Von " + formatWarningTime(warning.getStartSeconds())
+                        + " bis " + formatWarningTime(warning.getEndSeconds()),
+                16,
+                Color.BLACK
+        );
+        period.setPadding(0, 0, 0, 8);
+        card.addView(period);
+
+        addWarningSection(card, "Meldung", warning.getText());
+        addWarningSection(card, "Meteorologische Details", warning.getMeteorologicalText());
+        addWarningSection(card, "Mögliche Auswirkungen", warning.getEffects());
+        addWarningSection(card, "Empfehlungen", warning.getRecommendations());
+
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+        params.setMargins(0, 0, 0, 14);
+        card.setLayoutParams(params);
+        return card;
+    }
+
+    private void addWarningSection(
+            LinearLayout card,
+            String heading,
+            String value
+    ) {
+        if (value == null || value.length() == 0) {
+            return;
+        }
+
+        TextView view = createWeatherText(
+                heading + "\n" + value,
+                15,
+                Color.BLACK
+        );
+        view.setPadding(0, 4, 0, 7);
+        card.addView(view);
     }
 
     private void drawWeatherForecast() {
