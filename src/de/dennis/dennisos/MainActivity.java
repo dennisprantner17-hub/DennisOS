@@ -144,6 +144,7 @@ public class MainActivity extends Activity {
     private int batterySyncMinutes = 15;
     private long syncMonitoringStartedAt = 0L;
     private int automaticResetMinutes = 1;
+    private long lastLightToggleAt = 0L;
 
     private GestureDetector gestureDetector;
 
@@ -1508,6 +1509,16 @@ public class MainActivity extends Activity {
     }
 
     private void toggleLight() {
+        long now = System.currentTimeMillis();
+
+        // Die alte Tolino-Frontlichtsteuerung benötigt nach einer Änderung
+        // kurz Zeit. Zu schnelle Window-Helligkeitswechsel können sonst die
+        // Touch-Eingabe des Geräts blockieren.
+        if (now - lastLightToggleAt < 1200L) {
+            return;
+        }
+
+        lastLightToggleAt = now;
         consumeWakeGesture = false;
         autoLightSleeping = false;
 
@@ -1526,6 +1537,20 @@ public class MainActivity extends Activity {
 
         setLightState(newState);
         scheduleAutomaticLightOff();
+
+        if (lightButton != null) {
+            lightButton.setEnabled(false);
+            lightButton.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    consumeWakeGesture = false;
+                    if (lightButton != null) {
+                        lightButton.setEnabled(true);
+                        lightButton.setClickable(true);
+                    }
+                }
+            }, 1200L);
+        }
     }
 
     private void wakeNightLightTemporarily() {
