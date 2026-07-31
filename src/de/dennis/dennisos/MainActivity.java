@@ -2697,10 +2697,21 @@ public class MainActivity extends Activity {
         screensaverStatus.setPadding(0, 4, 0, 6);
         page.addView(screensaverStatus);
 
-        page.setOnClickListener(new View.OnClickListener() {
+        page.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View view) {
-                screensaverDialog.dismiss();
+            public boolean onTouch(View view, MotionEvent event) {
+                if (event.getActionMasked() != MotionEvent.ACTION_UP) {
+                    return true;
+                }
+                float third = Math.max(1, view.getWidth()) / 3.0f;
+                if (event.getX() < third) {
+                    loadScreensaverRelative(-1);
+                } else if (event.getX() >= third * 2.0f) {
+                    loadScreensaverRelative(1);
+                } else {
+                    screensaverDialog.dismiss();
+                }
+                return true;
             }
         });
 
@@ -2732,7 +2743,35 @@ public class MainActivity extends Activity {
                         && screensaverDialog.isShowing()
                         && screensaverImage != null) {
                     screensaverImage.setImageBitmap(bitmap);
-                    screensaverStatus.setText("Zum Beenden Bildschirm antippen");
+                    screensaverStatus.setText(
+                            "Links: zurück · Mitte: Startseite · Rechts: weiter"
+                    );
+                }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+                if (screensaverStatus != null) {
+                    screensaverStatus.setText("Fotoalbum momentan nicht verfügbar");
+                }
+            }
+        });
+    }
+
+    private void loadScreensaverRelative(int direction) {
+        if (screensaverStatus != null) {
+            screensaverStatus.setText("Bild wird geladen …");
+        }
+        ScreensaverSync.loadRelative(direction, new ScreensaverSync.Callback() {
+            @Override
+            public void onFinished(android.graphics.Bitmap bitmap) {
+                if (screensaverDialog != null
+                        && screensaverDialog.isShowing()
+                        && screensaverImage != null) {
+                    screensaverImage.setImageBitmap(bitmap);
+                    screensaverStatus.setText(
+                            "Links: zurück · Mitte: Startseite · Rechts: weiter"
+                    );
                 }
             }
 
