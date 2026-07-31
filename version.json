@@ -3,5 +3,5 @@
   "versionName": "3.4.11",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=46",
   "sha256": "882d7a84eb3cc363603a08124802215fcd453203d9882ed3898cde595b1691b3",
-  "notes": "Der Update-Download funktioniert jetzt auch auf Tolino-Geräten, deren SD-Karten-Appordner gesperrt sind. DennisOS verwendet dafür automatisch einen sicheren internen Speicherort."
+  "notes": "Neue Wetterwarnkarte für Am Katzelbach 21: Warnstufe, Art und Zeitraum erscheinen nur bei aktiven Warnungen. Antippen öffnet Auswirkungen, Empfehlungen und weitere Details im Vollbild."
 }
