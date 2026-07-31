@@ -44,9 +44,6 @@ public class MainActivity extends Activity {
     private static final long SYNC_INTERVAL_MS =
             15L * 60L * 1000L;
 
-    private static final long RESET_DELAY_MS =
-            60L * 1000L;
-
     private static final long NIGHT_WAKE_TIME_MS =
             60L * 1000L;
 
@@ -146,6 +143,7 @@ public class MainActivity extends Activity {
     private int pluggedSyncSeconds = 10;
     private int batterySyncMinutes = 15;
     private long syncMonitoringStartedAt = 0L;
+    private int automaticResetMinutes = 1;
 
     private GestureDetector gestureDetector;
 
@@ -2569,6 +2567,9 @@ public class MainActivity extends Activity {
         batterySyncMinutes = preferences.getInt(
                 "battery_sync_minutes", 15
         );
+        automaticResetMinutes = preferences.getInt(
+                "automatic_reset_minutes", 1
+        );
     }
 
     private void saveDisplaySettings() {
@@ -2593,6 +2594,7 @@ public class MainActivity extends Activity {
         editor.putBoolean("automatic_updates_enabled", automaticUpdatesEnabled);
         editor.putInt("plugged_sync_seconds", pluggedSyncSeconds);
         editor.putInt("battery_sync_minutes", batterySyncMinutes);
+        editor.putInt("automatic_reset_minutes", automaticResetMinutes);
 
         for (int index = 0;
              index < 7;
@@ -2921,6 +2923,15 @@ public class MainActivity extends Activity {
                 new View.OnClickListener() {
                     @Override public void onClick(View view) {
                         showUpdateSettings();
+                    }
+                }
+        ));
+        page.addView(createSettingsMenuButton(
+                "Rückkehr zur Startseite",
+                "Zeit nach der letzten Bedienung einstellen",
+                new View.OnClickListener() {
+                    @Override public void onClick(View view) {
+                        showAutomaticResetSettings();
                     }
                 }
         ));
@@ -3269,6 +3280,60 @@ public class MainActivity extends Activity {
             }
         });
         page.addView(now);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(page);
+        settingsDialog.setContentView(scroll);
+        settingsDialog.show();
+        applyDialogBrightness(settingsDialog);
+        scheduleAutomaticReset();
+    }
+
+    private void showAutomaticResetSettings() {
+        if (settingsDialog != null && settingsDialog.isShowing()) {
+            settingsDialog.dismiss();
+        }
+
+        settingsDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+
+        LinearLayout page = createSettingsPage(
+                "Rückkehr zur Startseite"
+        );
+
+        page.addView(createSettingTitle(
+                "Zurück nach letzter Bedienung"
+        ));
+
+        final TextView value = createSettingValue(
+                automaticResetMinutes + " Minuten"
+        );
+        page.addView(value);
+
+        SeekBar delay = new SeekBar(this);
+        delay.setMax(29);
+        delay.setProgress(Math.max(0, automaticResetMinutes - 1));
+        delay.setPadding(50, 2, 50, 10);
+        delay.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                automaticResetMinutes = progress + 1;
+                value.setText(automaticResetMinutes + " Minuten");
+                saveDisplaySettings();
+                scheduleAutomaticReset();
+            }
+        });
+        page.addView(delay);
+
+        TextView info = createSettingLabel(
+                "Danach schließt DennisOS Wetter, Warnungen, Kalenderdetails "
+                        + "oder Einstellungen und zeigt wieder die Startseite."
+        );
+        info.setGravity(Gravity.CENTER);
+        info.setPadding(30, 22, 30, 0);
+        page.addView(info);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -3985,11 +4050,18 @@ public class MainActivity extends Activity {
                     );
         }
 
+        int plugged =
+                batteryIntent.getIntExtra(
+                        BatteryManager.EXTRA_PLUGGED,
+                        0
+                );
+
         boolean charging =
                 status
                         == BatteryManager.BATTERY_STATUS_CHARGING
                         || status
-                        == BatteryManager.BATTERY_STATUS_FULL;
+                        == BatteryManager.BATTERY_STATUS_FULL
+                        || plugged != 0;
 
         if (deviceCharging != charging) {
             deviceCharging = charging;
@@ -7262,7 +7334,8 @@ public class MainActivity extends Activity {
 
         resetHandler.postDelayed(
                 automaticReset,
-                RESET_DELAY_MS
+                Math.max(1, automaticResetMinutes)
+                        * 60L * 1000L
         );
     }
 
