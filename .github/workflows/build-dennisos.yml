@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DENNISOS_BUILD_NUMBER: ${{ github.run_number }}
+      DENNISOS_KEYSTORE_FILE: /home/runner/.android/debug.keystore
+      DENNISOS_KEYSTORE_PASSWORD: android
+      DENNISOS_KEY_ALIAS: androiddebugkey
+      DENNISOS_KEY_PASSWORD: android
 
     steps:
       - name: Projekt laden
@@ -51,6 +55,12 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew clean assembleDebug
+
+      - name: APK-Signatur prüfen
+        run: |
+          ACTUAL_SHA256=$(keytool -printcert -jarfile build/outputs/apk/debug/DennisOS-debug.apk | awk '/SHA256:/{print $2}')
+          EXPECTED_SHA256="68:C9:54:D3:F4:A9:96:8D:2D:0E:41:28:70:E7:A5:88:05:EB:69:97:A3:54:1F:60:06:C5:CC:19:18:19:B4:98"
+          test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
 
       - name: Update-Dateien erzeugen
         run: |
