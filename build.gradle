@@ -34,8 +34,8 @@ android {
         applicationId "de.dennis.dennisos"
         minSdk 19
         targetSdk 19
-        versionCode Integer.parseInt(System.getenv("DENNISOS_VERSION_CODE") ?: "35")
-        versionName System.getenv("DENNISOS_VERSION_NAME") ?: "3.4-Fixes"
+        versionCode Integer.parseInt(System.getenv("DENNISOS_VERSION_CODE") ?: "79")
+        versionName System.getenv("DENNISOS_VERSION_NAME") ?: "4.0.0"
     }
 
     sourceSets {
