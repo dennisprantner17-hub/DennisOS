@@ -25,6 +25,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.GridLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
@@ -84,6 +85,7 @@ public class MainActivity extends Activity {
     private Dialog weatherDialog;
     private Dialog warningDialog;
     private Dialog settingsDialog;
+    private Dialog screensaverDialog;
 
     private final Handler clockHandler = new Handler();
     private final Handler countdownHandler = new Handler();
@@ -92,6 +94,7 @@ public class MainActivity extends Activity {
     private final Handler resetHandler = new Handler();
     private final Handler nightHandler = new Handler();
     private final Handler buttonAnimationHandler = new Handler();
+    private final Handler screensaverHandler = new Handler();
 
     private final String[] syncAnimationFrames = {
             "↻",
@@ -126,6 +129,12 @@ public class MainActivity extends Activity {
             6, 6, 6, 6, 6, 8, 8
     };
     private int brightnessPercent = 100;
+    private boolean screensaverEnabled = true;
+    private int screensaverIdleMinutes = 10;
+    private int screensaverChangeMinutes = 15;
+    private boolean screensaverLightOn = false;
+    private int screensaverLightStartHour = 7;
+    private int screensaverLightEndHour = 22;
     private boolean syncRunning = false;
     private boolean updateCheckRequestedByUser = false;
 
@@ -161,6 +170,7 @@ public class MainActivity extends Activity {
         startCountdown();
         startBatteryUpdates();
         startNightModeController();
+        scheduleScreensaver();
 
         showActiveView();
         runSync();
@@ -802,6 +812,18 @@ public class MainActivity extends Activity {
     ) {
         int action =
                 event.getActionMasked();
+
+        if (action == MotionEvent.ACTION_DOWN
+                && screensaverDialog != null
+                && screensaverDialog.isShowing()) {
+            screensaverDialog.dismiss();
+            scheduleScreensaver();
+            return true;
+        }
+
+        if (action == MotionEvent.ACTION_DOWN) {
+            scheduleScreensaver();
+        }
 
         if (consumeWakeGesture) {
             if (action == MotionEvent.ACTION_UP
@@ -2483,6 +2505,25 @@ public class MainActivity extends Activity {
                         "brightness_percent",
                         100
                 );
+
+        screensaverEnabled = preferences.getBoolean(
+                "screensaver_enabled", true
+        );
+        screensaverIdleMinutes = preferences.getInt(
+                "screensaver_idle_minutes", 10
+        );
+        screensaverChangeMinutes = preferences.getInt(
+                "screensaver_change_minutes", 15
+        );
+        screensaverLightOn = preferences.getBoolean(
+                "screensaver_light_on", false
+        );
+        screensaverLightStartHour = preferences.getInt(
+                "screensaver_light_start", 7
+        );
+        screensaverLightEndHour = preferences.getInt(
+                "screensaver_light_end", 22
+        );
     }
 
     private void saveDisplaySettings() {
@@ -2495,6 +2536,13 @@ public class MainActivity extends Activity {
                 "brightness_percent",
                 brightnessPercent
         );
+
+        editor.putBoolean("screensaver_enabled", screensaverEnabled);
+        editor.putInt("screensaver_idle_minutes", screensaverIdleMinutes);
+        editor.putInt("screensaver_change_minutes", screensaverChangeMinutes);
+        editor.putBoolean("screensaver_light_on", screensaverLightOn);
+        editor.putInt("screensaver_light_start", screensaverLightStartHour);
+        editor.putInt("screensaver_light_end", screensaverLightEndHour);
 
         for (int index = 0;
              index < 7;
@@ -2512,7 +2560,413 @@ public class MainActivity extends Activity {
         editor.apply();
     }
 
+    private void scheduleScreensaver() {
+        screensaverHandler.removeCallbacks(startScreensaver);
+        screensaverHandler.removeCallbacks(changeScreensaverImage);
+
+        if (!screensaverEnabled) {
+            return;
+        }
+
+        screensaverHandler.postDelayed(
+                startScreensaver,
+                Math.max(1, screensaverIdleMinutes) * 60L * 1000L
+        );
+    }
+
+    private final Runnable startScreensaver = new Runnable() {
+        @Override
+        public void run() {
+            showScreensaver();
+        }
+    };
+
+    private final Runnable changeScreensaverImage = new Runnable() {
+        @Override
+        public void run() {
+            if (screensaverDialog != null
+                    && screensaverDialog.isShowing()) {
+                loadScreensaverImage();
+                screensaverHandler.postDelayed(
+                        this,
+                        Math.max(1, screensaverChangeMinutes) * 60L * 1000L
+                );
+            }
+        }
+    };
+
+    private ImageView screensaverImage;
+    private TextView screensaverStatus;
+
+    private void showScreensaver() {
+        if (!screensaverEnabled
+                || isFinishing()
+                || (settingsDialog != null && settingsDialog.isShowing())
+                || (weatherDialog != null && weatherDialog.isShowing())
+                || (warningDialog != null && warningDialog.isShowing())) {
+            scheduleScreensaver();
+            return;
+        }
+
+        screensaverDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+
+        LinearLayout page = new LinearLayout(this);
+        page.setOrientation(LinearLayout.VERTICAL);
+        page.setGravity(Gravity.CENTER);
+        page.setBackgroundColor(Color.BLACK);
+
+        screensaverImage = new ImageView(this);
+        screensaverImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        screensaverImage.setBackgroundColor(Color.BLACK);
+        page.addView(
+                screensaverImage,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        0,
+                        1
+                )
+        );
+
+        screensaverStatus = new TextView(this);
+        screensaverStatus.setText("Bild wird geladen …");
+        screensaverStatus.setTextSize(13);
+        screensaverStatus.setTextColor(Color.WHITE);
+        screensaverStatus.setGravity(Gravity.CENTER);
+        screensaverStatus.setPadding(0, 4, 0, 6);
+        page.addView(screensaverStatus);
+
+        page.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                screensaverDialog.dismiss();
+            }
+        });
+
+        screensaverDialog.setContentView(page);
+        screensaverDialog.setOnDismissListener(
+                new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        screensaverHandler.removeCallbacks(changeScreensaverImage);
+                        applyNightBrightness();
+                        scheduleScreensaver();
+                    }
+                }
+        );
+        screensaverDialog.show();
+        applyScreensaverLight();
+        loadScreensaverImage();
+        screensaverHandler.postDelayed(
+                changeScreensaverImage,
+                Math.max(1, screensaverChangeMinutes) * 60L * 1000L
+        );
+    }
+
+    private void loadScreensaverImage() {
+        ScreensaverSync.loadRandom(new ScreensaverSync.Callback() {
+            @Override
+            public void onFinished(android.graphics.Bitmap bitmap) {
+                if (screensaverDialog != null
+                        && screensaverDialog.isShowing()
+                        && screensaverImage != null) {
+                    screensaverImage.setImageBitmap(bitmap);
+                    screensaverStatus.setText("Zum Beenden Bildschirm antippen");
+                }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+                if (screensaverStatus != null) {
+                    screensaverStatus.setText("Fotoalbum momentan nicht verfügbar");
+                }
+            }
+        });
+    }
+
+    private void applyScreensaverLight() {
+        Calendar now = Calendar.getInstance();
+        int hour = now.get(Calendar.HOUR_OF_DAY);
+        boolean inside;
+        if (screensaverLightStartHour == screensaverLightEndHour) {
+            inside = true;
+        } else if (screensaverLightStartHour < screensaverLightEndHour) {
+            inside = hour >= screensaverLightStartHour
+                    && hour < screensaverLightEndHour;
+        } else {
+            inside = hour >= screensaverLightStartHour
+                    || hour < screensaverLightEndHour;
+        }
+
+        if (inside) {
+            setLightState(screensaverLightOn);
+        } else {
+            applyNightBrightness();
+        }
+    }
+
     private void showSettingsFullscreen() {
+        if (settingsDialog != null && settingsDialog.isShowing()) {
+            settingsDialog.dismiss();
+        }
+
+        settingsDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+
+        LinearLayout page = createSettingsPage("Einstellungen");
+        page.addView(createSettingsMenuButton(
+                "Licht und Nachtmodus",
+                "Helligkeit und Zeiten pro Wochentag",
+                new View.OnClickListener() {
+                    @Override public void onClick(View view) {
+                        showLightSettings();
+                    }
+                }
+        ));
+        page.addView(createSettingsMenuButton(
+                "Bildschirmschoner",
+                "Start, Bildwechsel und Licht festlegen",
+                new View.OnClickListener() {
+                    @Override public void onClick(View view) {
+                        showScreensaverSettings();
+                    }
+                }
+        ));
+        page.addView(createSettingsMenuButton(
+                "Synchronisierung",
+                "Kalender, Wetter und Warnungen jetzt aktualisieren",
+                new View.OnClickListener() {
+                    @Override public void onClick(View view) {
+                        settingsDialog.dismiss();
+                        runSync();
+                    }
+                }
+        ));
+        page.addView(createSettingsMenuButton(
+                "Updates",
+                "Nach einer neuen DennisOS-Version suchen",
+                new View.OnClickListener() {
+                    @Override public void onClick(View view) {
+                        UpdateManager.checkForUpdate(MainActivity.this, true);
+                    }
+                }
+        ));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(page);
+        settingsDialog.setContentView(scroll);
+        settingsDialog.show();
+        applyDialogBrightness(settingsDialog);
+    }
+
+    private LinearLayout createSettingsPage(String titleText) {
+        LinearLayout page = new LinearLayout(this);
+        page.setOrientation(LinearLayout.VERTICAL);
+        page.setBackgroundColor(Color.WHITE);
+        page.setPadding(26, 14, 26, 14);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView close = new TextView(this);
+        close.setText("×");
+        close.setTextSize(38);
+        close.setTextColor(Color.BLACK);
+        close.setGravity(Gravity.CENTER);
+        close.setLayoutParams(new LinearLayout.LayoutParams(80, 72));
+        close.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                settingsDialog.dismiss();
+            }
+        });
+
+        TextView title = new TextView(this);
+        title.setText(titleText);
+        title.setTextSize(28);
+        title.setTextColor(Color.BLACK);
+        title.setGravity(Gravity.CENTER);
+        title.setLayoutParams(new LinearLayout.LayoutParams(0, 72, 1));
+
+        TextView spacer = new TextView(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(80, 72));
+        header.addView(close);
+        header.addView(title);
+        header.addView(spacer);
+        page.addView(header);
+        page.addView(createHorizontalLine());
+        return page;
+    }
+
+    private View createSettingsMenuButton(
+            String title,
+            String description,
+            View.OnClickListener listener
+    ) {
+        LinearLayout button = new LinearLayout(this);
+        button.setOrientation(LinearLayout.VERTICAL);
+        button.setPadding(22, 16, 22, 16);
+        button.setBackground(createBorderDrawable(
+                Color.WHITE, Color.rgb(140, 140, 140), 2
+        ));
+        button.setOnClickListener(listener);
+
+        TextView heading = createWeatherText(title + "  ›", 21, Color.BLACK);
+        TextView detail = createWeatherText(description, 14, Color.DKGRAY);
+        detail.setPadding(0, 4, 0, 0);
+        button.addView(heading);
+        button.addView(detail);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(80, 14, 80, 0);
+        button.setLayoutParams(params);
+        return button;
+    }
+
+    private void showScreensaverSettings() {
+        if (settingsDialog != null && settingsDialog.isShowing()) {
+            settingsDialog.dismiss();
+        }
+        settingsDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+        final LinearLayout page = createSettingsPage("Bildschirmschoner");
+
+        final TextView enabled = createSettingsMenuButtonText(
+                "Bildschirmschoner: " + (screensaverEnabled ? "EIN" : "AUS")
+        );
+        enabled.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                screensaverEnabled = !screensaverEnabled;
+                enabled.setText("Bildschirmschoner: "
+                        + (screensaverEnabled ? "EIN" : "AUS"));
+                saveDisplaySettings();
+                scheduleScreensaver();
+            }
+        });
+        page.addView(enabled);
+
+        page.addView(createSettingTitle("Start nach Inaktivität"));
+        final TextView idleValue = createSettingValue(
+                screensaverIdleMinutes + " Minuten"
+        );
+        page.addView(idleValue);
+        SeekBar idle = new SeekBar(this);
+        idle.setMax(59);
+        idle.setProgress(Math.max(0, screensaverIdleMinutes - 1));
+        idle.setPadding(50, 2, 50, 10);
+        idle.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                screensaverIdleMinutes = progress + 1;
+                idleValue.setText(screensaverIdleMinutes + " Minuten");
+                saveDisplaySettings();
+                scheduleScreensaver();
+            }
+        });
+        page.addView(idle);
+
+        page.addView(createSettingTitle("Neues Bild nach"));
+        final TextView changeValue = createSettingValue(
+                screensaverChangeMinutes + " Minuten"
+        );
+        page.addView(changeValue);
+        SeekBar change = new SeekBar(this);
+        change.setMax(59);
+        change.setProgress(Math.max(0, screensaverChangeMinutes - 1));
+        change.setPadding(50, 2, 50, 10);
+        change.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                screensaverChangeMinutes = progress + 1;
+                changeValue.setText(screensaverChangeMinutes + " Minuten");
+                saveDisplaySettings();
+            }
+        });
+        page.addView(change);
+
+        final TextView light = createSettingsMenuButtonText(
+                "Licht im Bildschirmschoner: "
+                        + (screensaverLightOn ? "EIN" : "AUS")
+        );
+        light.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                screensaverLightOn = !screensaverLightOn;
+                light.setText("Licht im Bildschirmschoner: "
+                        + (screensaverLightOn ? "EIN" : "AUS"));
+                saveDisplaySettings();
+            }
+        });
+        page.addView(light);
+
+        final TextView lightTimes = createSettingValue(
+                formatHour(screensaverLightStartHour) + " bis "
+                        + formatHour(screensaverLightEndHour)
+        );
+        page.addView(createSettingTitle("Licht-Einstellung gilt von"));
+        page.addView(lightTimes);
+        page.addView(createSettingLabel("Beginn"));
+        SeekBar lightStart = new SeekBar(this);
+        lightStart.setMax(23);
+        lightStart.setProgress(screensaverLightStartHour);
+        lightStart.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                screensaverLightStartHour = progress;
+                lightTimes.setText(formatHour(screensaverLightStartHour)
+                        + " bis " + formatHour(screensaverLightEndHour));
+                saveDisplaySettings();
+            }
+        });
+        page.addView(lightStart);
+        page.addView(createSettingLabel("Ende"));
+        SeekBar lightEnd = new SeekBar(this);
+        lightEnd.setMax(23);
+        lightEnd.setProgress(screensaverLightEndHour);
+        lightEnd.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                screensaverLightEndHour = progress;
+                lightTimes.setText(formatHour(screensaverLightStartHour)
+                        + " bis " + formatHour(screensaverLightEndHour));
+                saveDisplaySettings();
+            }
+        });
+        page.addView(lightEnd);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(page);
+        settingsDialog.setContentView(scroll);
+        settingsDialog.show();
+        applyDialogBrightness(settingsDialog);
+    }
+
+    private TextView createSettingsMenuButtonText(String text) {
+        TextView button = new TextView(this);
+        button.setText(text);
+        button.setTextSize(18);
+        button.setTextColor(Color.BLACK);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(18, 14, 18, 14);
+        button.setBackground(createBorderDrawable(
+                Color.WHITE, Color.rgb(130, 130, 130), 2
+        ));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(80, 14, 80, 4);
+        button.setLayoutParams(params);
+        return button;
+    }
+
+    private void showLightSettings() {
         if (settingsDialog != null
                 && settingsDialog.isShowing()) {
 
@@ -2583,7 +3037,7 @@ public class MainActivity extends Activity {
         TextView title =
                 new TextView(this);
 
-        title.setText("Einstellungen");
+        title.setText("Licht und Nachtmodus");
         title.setTextSize(28);
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
@@ -3623,7 +4077,7 @@ public class MainActivity extends Activity {
         list.setPadding(0, 10, 0, 20);
 
         for (WarningSync.WeatherWarning warning : currentWarnings) {
-            list.addView(createWarningDetail(warning));
+            list.addView(createWarningSummary(warning));
         }
 
         scroll.addView(list);
@@ -3648,6 +4102,77 @@ public class MainActivity extends Activity {
         );
         warningDialog.show();
         applyDialogBrightness(warningDialog);
+    }
+
+    private View createWarningSummary(
+            final WarningSync.WeatherWarning warning
+    ) {
+        final LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(createBorderDrawable(
+                warningBackgroundColor(warning.getLevel()),
+                Color.DKGRAY,
+                2
+        ));
+
+        TextView summary = new TextView(this);
+        summary.setText(
+                formatWarningDay(warning.getStartSeconds())
+                        + "  ·  "
+                        + WarningSync.levelName(warning.getLevel())
+                        + "  ·  "
+                        + WarningSync.typeName(warning.getType())
+                        + "\n"
+                        + formatWarningTime(warning.getStartSeconds())
+                        + " – "
+                        + formatWarningTime(warning.getEndSeconds())
+                        + "     Details ›"
+        );
+        summary.setTextSize(17);
+        summary.setTextColor(Color.BLACK);
+        summary.setPadding(18, 12, 18, 12);
+
+        final View details = createWarningDetail(warning);
+        details.setVisibility(View.GONE);
+        card.addView(summary);
+        card.addView(details);
+
+        summary.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                boolean open = details.getVisibility() == View.VISIBLE;
+                details.setVisibility(open ? View.GONE : View.VISIBLE);
+                ((TextView) view).setText(
+                        formatWarningDay(warning.getStartSeconds())
+                                + "  ·  "
+                                + WarningSync.levelName(warning.getLevel())
+                                + "  ·  "
+                                + WarningSync.typeName(warning.getType())
+                                + "\n"
+                                + formatWarningTime(warning.getStartSeconds())
+                                + " – "
+                                + formatWarningTime(warning.getEndSeconds())
+                                + (open ? "     Details ›" : "     Details ⌄")
+                );
+            }
+        });
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 0, 0, 12);
+        card.setLayoutParams(params);
+        return card;
+    }
+
+    private String formatWarningDay(long seconds) {
+        if (seconds <= 0L) {
+            return "Warnung";
+        }
+        return new SimpleDateFormat(
+                "EEE, dd.MM.",
+                Locale.GERMAN
+        ).format(new Date(seconds * 1000L));
     }
 
     private View createWarningDetail(
