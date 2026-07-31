@@ -1,7 +1,7 @@
 {
-  "versionCode": 59,
-  "versionName": "3.4.24",
-  "apkUrl": "https://github.com/dennisprantner17-hub/DennisOS/raw/refs/heads/main/DennisOS-update.apk?download=1&v=59",
-  "sha256": "b1ac550130698cc4e1dd337c3816d5bcd25726ea961b0d89a9f31eaaca2f3d25",
+  "versionCode": 60,
+  "versionName": "3.4.25",
+  "apkUrl": "https://github.com/dennisprantner17-hub/DennisOS/raw/refs/heads/main/DennisOS-update.apk?download=1&v=60",
+  "sha256": "72b5dff396211e6ed1d5a30203f44affae681440a2db155db7211eddc79507d5",
   "notes": "Bildschirmschoner-Schalter, Lichtsteuerung und automatische Rückkehr wurden repariert. Links und rechts wechseln das Foto, die Mitte führt zur Startseite."
 }
