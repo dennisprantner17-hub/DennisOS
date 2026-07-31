@@ -81,8 +81,9 @@ jobs:
           data["versionCode"] = int(os.environ["DENNISOS_VERSION_CODE"])
           data["versionName"] = os.environ["DENNISOS_VERSION_NAME"]
           data["apkUrl"] = (
-              "https://raw.githubusercontent.com/dennisprantner17-hub/"
-              f"DennisOS/main/DennisOS-update.apk?v={data['versionCode']}"
+              "https://github.com/dennisprantner17-hub/DennisOS/"
+              "raw/refs/heads/main/DennisOS-update.apk?download=1&"
+              f"v={data['versionCode']}"
           )
           data["sha256"] = sys.argv[1]
           with open(path, "w", encoding="utf-8") as file:
