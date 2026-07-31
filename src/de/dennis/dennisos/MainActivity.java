@@ -2712,7 +2712,15 @@ public class MainActivity extends Activity {
                 } else if (event.getX() >= third * 2.0f) {
                     loadScreensaverRelative(1);
                 } else {
-                    screensaverDialog.dismiss();
+                    view.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (screensaverDialog != null
+                                    && screensaverDialog.isShowing()) {
+                                screensaverDialog.dismiss();
+                            }
+                        }
+                    }, 150L);
                 }
                 return true;
             }
@@ -2730,6 +2738,20 @@ public class MainActivity extends Activity {
                         applyNightBrightness();
                         scheduleScreensaver();
                         scheduleAutomaticLightOff();
+                        rootLayout.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                rootLayout.setEnabled(true);
+                                rootLayout.setClickable(true);
+                                rootLayout.setFocusableInTouchMode(true);
+                                rootLayout.requestFocus();
+                                getWindow().getDecorView().setSystemUiVisibility(
+                                        View.SYSTEM_UI_FLAG_FULLSCREEN
+                                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                                );
+                            }
+                        }, 100L);
                     }
                 }
         );
