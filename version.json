@@ -3,5 +3,5 @@
   "versionName": "3.4.5",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=40",
   "sha256": "21b4a95e4f5dcb1c43e7e47a1a495a9934e386af0525d57a0fb442281b08c019",
-  "notes": "Helligkeit reagiert sofort. Der erste Druck bei ausgeschaltetem Nachtlicht weckt nur den Bildschirm. Fehlende Termine mit Uhrzeit werden wieder angezeigt. Die Wetterdetailansicht wurde kompakter gestaltet."
+  "notes": "Wetterdetails nutzen jetzt die ganze Seite und abgeschnittene Wetterwerte sind korrigiert. Für jeden Wochentag können eigene Nachtmodus-Zeiten eingestellt werden."
 }
