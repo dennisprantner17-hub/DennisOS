@@ -28,7 +28,7 @@ await page.waitForFunction(
   { timeout: 90000 }
 );
 
-await page.waitForTimeout(5000);
+await page.waitForTimeout(500);
 
 const gridImages = page.locator('img[src^="blob:"]');
 const albumCount = Math.max(
