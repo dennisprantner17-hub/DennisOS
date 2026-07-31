@@ -95,6 +95,7 @@ public class MainActivity extends Activity {
     private final Handler nightHandler = new Handler();
     private final Handler buttonAnimationHandler = new Handler();
     private final Handler screensaverHandler = new Handler();
+    private final Handler lightIdleHandler = new Handler();
 
     private final String[] syncAnimationFrames = {
             "↻",
@@ -135,6 +136,9 @@ public class MainActivity extends Activity {
     private boolean screensaverLightOn = false;
     private int screensaverLightStartHour = 7;
     private int screensaverLightEndHour = 22;
+    private boolean autoLightOffEnabled = false;
+    private int autoLightOffMinutes = 5;
+    private boolean autoLightSleeping = false;
     private boolean syncRunning = false;
     private boolean updateCheckRequestedByUser = false;
 
@@ -171,6 +175,7 @@ public class MainActivity extends Activity {
         startBatteryUpdates();
         startNightModeController();
         scheduleScreensaver();
+        scheduleAutomaticLightOff();
 
         showActiveView();
         runSync();
@@ -823,6 +828,16 @@ public class MainActivity extends Activity {
 
         if (action == MotionEvent.ACTION_DOWN) {
             scheduleScreensaver();
+            if (autoLightOffEnabled) {
+                boolean wasSleeping = autoLightSleeping || !lightCurrentlyOn;
+                autoLightSleeping = false;
+                setLightState(true);
+                scheduleAutomaticLightOff();
+                if (wasSleeping) {
+                    consumeWakeGesture = true;
+                    return true;
+                }
+            }
         }
 
         if (consumeWakeGesture) {
@@ -1445,6 +1460,11 @@ public class MainActivity extends Activity {
     }
 
     private void applyNightBrightness() {
+        if (autoLightSleeping) {
+            setLightState(false);
+            return;
+        }
+
         if (manualLightOverride
                 != null) {
 
@@ -2524,6 +2544,12 @@ public class MainActivity extends Activity {
         screensaverLightEndHour = preferences.getInt(
                 "screensaver_light_end", 22
         );
+        autoLightOffEnabled = preferences.getBoolean(
+                "auto_light_off_enabled", false
+        );
+        autoLightOffMinutes = preferences.getInt(
+                "auto_light_off_minutes", 5
+        );
     }
 
     private void saveDisplaySettings() {
@@ -2543,6 +2569,8 @@ public class MainActivity extends Activity {
         editor.putBoolean("screensaver_light_on", screensaverLightOn);
         editor.putInt("screensaver_light_start", screensaverLightStartHour);
         editor.putInt("screensaver_light_end", screensaverLightEndHour);
+        editor.putBoolean("auto_light_off_enabled", autoLightOffEnabled);
+        editor.putInt("auto_light_off_minutes", autoLightOffMinutes);
 
         for (int index = 0;
              index < 7;
@@ -2573,6 +2601,29 @@ public class MainActivity extends Activity {
                 Math.max(1, screensaverIdleMinutes) * 60L * 1000L
         );
     }
+
+    private void scheduleAutomaticLightOff() {
+        lightIdleHandler.removeCallbacks(turnLightOffAfterInactivity);
+        if (!autoLightOffEnabled) {
+            autoLightSleeping = false;
+            return;
+        }
+        lightIdleHandler.postDelayed(
+                turnLightOffAfterInactivity,
+                Math.max(1, autoLightOffMinutes) * 60L * 1000L
+        );
+    }
+
+    private final Runnable turnLightOffAfterInactivity = new Runnable() {
+        @Override
+        public void run() {
+            if (!autoLightOffEnabled) {
+                return;
+            }
+            autoLightSleeping = true;
+            setLightState(false);
+        }
+    };
 
     private final Runnable startScreensaver = new Runnable() {
         @Override
@@ -3154,6 +3205,44 @@ public class MainActivity extends Activity {
         );
 
         page.addView(brightness);
+        page.addView(createHorizontalLine());
+
+        final TextView autoLightToggle = createSettingsMenuButtonText(
+                "Licht automatisch aus: " + (autoLightOffEnabled ? "EIN" : "AUS")
+        );
+        autoLightToggle.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                autoLightOffEnabled = !autoLightOffEnabled;
+                autoLightToggle.setText("Licht automatisch aus: "
+                        + (autoLightOffEnabled ? "EIN" : "AUS"));
+                if (!autoLightOffEnabled) {
+                    autoLightSleeping = false;
+                    applyNightBrightness();
+                }
+                saveDisplaySettings();
+                scheduleAutomaticLightOff();
+            }
+        });
+        page.addView(autoLightToggle);
+
+        page.addView(createSettingTitle("Licht aus nach Inaktivität"));
+        final TextView autoLightValue = createSettingValue(
+                autoLightOffMinutes + " Minuten"
+        );
+        page.addView(autoLightValue);
+        SeekBar autoLightDelay = new SeekBar(this);
+        autoLightDelay.setMax(59);
+        autoLightDelay.setProgress(Math.max(0, autoLightOffMinutes - 1));
+        autoLightDelay.setPadding(50, 2, 50, 10);
+        autoLightDelay.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                autoLightOffMinutes = progress + 1;
+                autoLightValue.setText(autoLightOffMinutes + " Minuten");
+                saveDisplaySettings();
+                scheduleAutomaticLightOff();
+            }
+        });
+        page.addView(autoLightDelay);
         page.addView(createHorizontalLine());
 
         page.addView(
@@ -7120,6 +7209,10 @@ public class MainActivity extends Activity {
         );
 
         buttonAnimationHandler.removeCallbacksAndMessages(
+                null
+        );
+
+        lightIdleHandler.removeCallbacksAndMessages(
                 null
         );
 
