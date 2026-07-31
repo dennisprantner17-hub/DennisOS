@@ -1,7 +1,7 @@
 {
-  "versionCode": 42,
-  "versionName": "3.4.7",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=42",
-  "sha256": "129272340232d7f82b22371adbce84c1911c2da9a3661fa60a436aba95f9d66f",
+  "versionCode": 80,
+  "versionName": "4.0.1",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/6421f74eb672069a38169b8368ac92414eb9ec78/DennisOS-update.apk",
+  "sha256": "2fd05a9ca50ebbe5b5a6319994466691ffe5f7f527215b043c511602fadc0384",
   "notes": "DennisOS 4.0 führt ein neues Apps-Menü mit Formel 1, ORF-News, Tageshoroskop und offiziellen österreichischen Lottozahlen ein."
 }
