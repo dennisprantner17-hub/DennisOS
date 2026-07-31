@@ -26,17 +26,8 @@ await page.waitForFunction(
   { timeout: 90000 }
 );
 
-// iCloud lädt weitere Albumkacheln verzögert und teilweise erst beim Scrollen.
-for (let pass = 0; pass < 4; pass++) {
-  await page.mouse.wheel(0, 1400);
-  await page.waitForTimeout(2000);
-}
-await page.waitForTimeout(5000);
-
-const albumCountText = await page.getByRole("heading", {
-  name: /Elemente/
-}).textContent();
-const albumCount = Number((albumCountText || "1").match(/\d+/)?.[0] || 1);
+const albumText = await page.locator("body").innerText();
+const albumCount = Number(albumText.match(/(\d+)\s+Elemente?/)?.[1] || 1);
 const gridImages = page.locator('img[src^="blob:"]');
 await gridImages.first().click();
 await page.waitForTimeout(3000);
