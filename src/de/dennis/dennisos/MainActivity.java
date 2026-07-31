@@ -821,8 +821,11 @@ public class MainActivity extends Activity {
         if (action == MotionEvent.ACTION_DOWN
                 && screensaverDialog != null
                 && screensaverDialog.isShowing()) {
+            consumeWakeGesture = false;
+            autoLightSleeping = false;
             screensaverDialog.dismiss();
             scheduleScreensaver();
+            scheduleAutomaticLightOff();
             return true;
         }
 
@@ -2721,8 +2724,12 @@ public class MainActivity extends Activity {
                     @Override
                     public void onDismiss(DialogInterface dialog) {
                         screensaverHandler.removeCallbacks(changeScreensaverImage);
+                        consumeWakeGesture = false;
+                        autoLightSleeping = false;
+                        screensaverDialog = null;
                         applyNightBrightness();
                         scheduleScreensaver();
+                        scheduleAutomaticLightOff();
                     }
                 }
         );
