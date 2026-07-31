@@ -2577,6 +2577,14 @@ public class MainActivity extends Activity {
     private final Runnable startScreensaver = new Runnable() {
         @Override
         public void run() {
+            screensaverEnabled = getSharedPreferences(
+                    SETTINGS_PREFS,
+                    MODE_PRIVATE
+            ).getBoolean("screensaver_enabled", screensaverEnabled);
+            if (!screensaverEnabled) {
+                screensaverHandler.removeCallbacks(changeScreensaverImage);
+                return;
+            }
             showScreensaver();
         }
     };
@@ -2850,6 +2858,11 @@ public class MainActivity extends Activity {
                 enabled.setText("Bildschirmschoner: "
                         + (screensaverEnabled ? "EIN" : "AUS"));
                 saveDisplaySettings();
+                if (!screensaverEnabled
+                        && screensaverDialog != null
+                        && screensaverDialog.isShowing()) {
+                    screensaverDialog.dismiss();
+                }
                 scheduleScreensaver();
             }
         });
@@ -6861,6 +6874,12 @@ public class MainActivity extends Activity {
                             && weatherDialog.isShowing()) {
 
                         weatherDialog.dismiss();
+                    }
+
+                    if (warningDialog != null
+                            && warningDialog.isShowing()) {
+
+                        warningDialog.dismiss();
                     }
 
                     if (fullscreenDayDialog != null
