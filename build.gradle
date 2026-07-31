@@ -15,6 +15,21 @@ android {
     namespace "de.dennis.dennisos"
     compileSdk 19
 
+    signingConfigs {
+        debug {
+            def configuredKeystore = System.getenv("DENNISOS_KEYSTORE_FILE")
+            if (!configuredKeystore && System.getenv("GITHUB_ACTIONS") == "true") {
+                configuredKeystore = "${System.getProperty('user.home')}/.android/debug.keystore"
+            }
+            if (configuredKeystore) {
+                storeFile file(configuredKeystore)
+                storePassword System.getenv("DENNISOS_KEYSTORE_PASSWORD") ?: "android"
+                keyAlias System.getenv("DENNISOS_KEY_ALIAS") ?: "androiddebugkey"
+                keyPassword System.getenv("DENNISOS_KEY_PASSWORD") ?: "android"
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "de.dennis.dennisos"
         minSdk 19
@@ -28,6 +43,12 @@ android {
             manifest.srcFile 'AndroidManifest.xml'
             java.srcDirs = ['src']
             res.srcDirs = ['res']
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
 }
