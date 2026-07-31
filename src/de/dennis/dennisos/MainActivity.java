@@ -3624,7 +3624,7 @@ public class MainActivity extends Activity {
         close.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         58,
-                        180
+                        220
                 )
         );
 
@@ -3660,7 +3660,7 @@ public class MainActivity extends Activity {
         hero.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         0,
-                        180,
+                        220,
                         1.20f
                 )
         );
@@ -3742,7 +3742,7 @@ public class MainActivity extends Activity {
         metrics.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         0,
-                        180,
+                        220,
                         1
                 )
         );
@@ -3792,7 +3792,7 @@ public class MainActivity extends Activity {
         top.addView(close);
         top.addView(hero);
         top.addView(
-                createVerticalLine(170)
+                createVerticalLine(210)
         );
         top.addView(metrics);
 
@@ -3860,7 +3860,7 @@ public class MainActivity extends Activity {
                 featureRow,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        54
+                        80
                 )
         );
 
@@ -3892,7 +3892,7 @@ public class MainActivity extends Activity {
                 hourlyRow,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        122
+                        180
                 )
         );
 
@@ -3989,15 +3989,11 @@ public class MainActivity extends Activity {
                 lower,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        220
+                        360
                 )
         );
 
-        ScrollView weatherScroll = new ScrollView(this);
-        weatherScroll.setFillViewport(true);
-        weatherScroll.setBackgroundColor(Color.WHITE);
-        weatherScroll.addView(page);
-        weatherDialog.setContentView(weatherScroll);
+        weatherDialog.setContentView(page);
 
         weatherDialog.setOnDismissListener(
                 new DialogInterface.OnDismissListener() {
@@ -4072,7 +4068,7 @@ public class MainActivity extends Activity {
                 new GridLayout.LayoutParams();
 
         params.width = 198;
-        params.height = 56;
+        params.height = 68;
 
         cell.setLayoutParams(params);
         grid.addView(cell);
@@ -4295,7 +4291,7 @@ public class MainActivity extends Activity {
         card.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         0,
-                        62,
+                        76,
                         1
                 )
         );
@@ -4346,7 +4342,7 @@ public class MainActivity extends Activity {
         cell.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         0,
-                        140,
+                        170,
                         1
                 )
         );
