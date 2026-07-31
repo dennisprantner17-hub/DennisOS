@@ -35,12 +35,8 @@ for (let pass = 0; pass < 4; pass++) {
 }
 await page.waitForTimeout(5000);
 
-const albumCountText = await page.getByRole("heading", {
-  name: /Elemente/
-}).textContent();
-const albumCount = Number((albumCountText || "1").match(/\d+/)?.[0] || 1);
-
 const gridImages = page.locator('img[src^="blob:"]');
+const albumCount = Math.max(1, await gridImages.count());
 await gridImages.first().click();
 await page.waitForTimeout(3000);
 
