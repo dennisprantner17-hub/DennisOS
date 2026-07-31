@@ -32,7 +32,21 @@ public final class ScreensaverSync {
     private ScreensaverSync() {
     }
 
+    private static int currentIndex = -1;
+
     public static void loadRandom(final Callback callback) {
+        load(0, true, callback);
+    }
+
+    public static void loadRelative(final int direction, final Callback callback) {
+        load(direction, false, callback);
+    }
+
+    private static void load(
+            final int direction,
+            final boolean random,
+            final Callback callback
+    ) {
         new AsyncTask<Void, Void, Result>() {
             @Override
             protected Result doInBackground(Void... ignored) {
@@ -42,7 +56,13 @@ public final class ScreensaverSync {
                         throw new Exception("Im Album sind keine Bilder verfügbar.");
                     }
 
-                    String selected = urls.get(new Random().nextInt(urls.size()));
+                    if (random || currentIndex < 0 || currentIndex >= urls.size()) {
+                        currentIndex = new Random().nextInt(urls.size());
+                    } else {
+                        currentIndex = (currentIndex + direction + urls.size())
+                                % urls.size();
+                    }
+                    String selected = urls.get(currentIndex);
                     HttpURLConnection connection = openConnection(selected);
                     connection.setConnectTimeout(20000);
                     connection.setReadTimeout(30000);
