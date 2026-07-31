@@ -389,6 +389,7 @@ public final class UpdateManager {
 
         File[] candidates =
                 new File[]{
+                        activity.getCacheDir(),
                         activity.getExternalCacheDir(),
                         activity.getExternalFilesDir(
                                 Environment.DIRECTORY_DOWNLOADS
@@ -405,8 +406,19 @@ public final class UpdateManager {
                 continue;
             }
 
-            if (!candidate.exists()
-                    && !candidate.mkdirs()) {
+            try {
+                if (!candidate.exists()
+                        && !candidate.mkdirs()) {
+                    continue;
+                }
+
+                // Alte Tolino-Firmware meldet externe App-Ordner teils als
+                // vorhanden, verweigert aber bereits mkdirs(). Der interne
+                // Cache ist zuverlässig beschreibbar. Für den separaten
+                // Paket-Installer muss der Ordner außerdem durchsuchbar sein.
+                candidate.setReadable(true, false);
+                candidate.setExecutable(true, false);
+            } catch (Exception ignored) {
                 continue;
             }
 
