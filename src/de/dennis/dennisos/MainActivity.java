@@ -142,6 +142,9 @@ public class MainActivity extends Activity {
     private boolean syncRunning = false;
     private boolean updateCheckRequestedByUser = false;
     private boolean automaticUpdatesEnabled = false;
+    private boolean deviceCharging = false;
+    private int pluggedSyncSeconds = 10;
+    private int batterySyncMinutes = 15;
 
     private GestureDetector gestureDetector;
 
@@ -183,7 +186,7 @@ public class MainActivity extends Activity {
 
         syncHandler.postDelayed(
                 automaticSync,
-                SYNC_INTERVAL_MS
+                currentSyncIntervalMs()
         );
     }
 
@@ -2557,6 +2560,12 @@ public class MainActivity extends Activity {
         automaticUpdatesEnabled = preferences.getBoolean(
                 "automatic_updates_enabled", false
         );
+        pluggedSyncSeconds = preferences.getInt(
+                "plugged_sync_seconds", 10
+        );
+        batterySyncMinutes = preferences.getInt(
+                "battery_sync_minutes", 15
+        );
     }
 
     private void saveDisplaySettings() {
@@ -2579,6 +2588,8 @@ public class MainActivity extends Activity {
         editor.putBoolean("auto_light_off_enabled", autoLightOffEnabled);
         editor.putInt("auto_light_off_minutes", autoLightOffMinutes);
         editor.putBoolean("automatic_updates_enabled", automaticUpdatesEnabled);
+        editor.putInt("plugged_sync_seconds", pluggedSyncSeconds);
+        editor.putInt("battery_sync_minutes", batterySyncMinutes);
 
         for (int index = 0;
              index < 7;
@@ -2897,8 +2908,7 @@ public class MainActivity extends Activity {
                 "Kalender, Wetter und Warnungen jetzt aktualisieren",
                 new View.OnClickListener() {
                     @Override public void onClick(View view) {
-                        settingsDialog.dismiss();
-                        runSync();
+                        showSyncSettings();
                     }
                 }
         ));
@@ -3139,6 +3149,13 @@ public class MainActivity extends Activity {
         );
         LinearLayout page = createSettingsPage("Updates");
 
+        TextView installed = createSettingValue(installedVersionLabel());
+        installed.setTextSize(18);
+        installed.setGravity(Gravity.CENTER);
+        installed.setPadding(10, 16, 10, 16);
+        page.addView(installed);
+        page.addView(createHorizontalLine());
+
         final TextView automatic = createSettingsMenuButtonText(
                 "Automatische Updates: "
                         + (automaticUpdatesEnabled ? "EIN" : "AUS")
@@ -3171,6 +3188,84 @@ public class MainActivity extends Activity {
         info.setGravity(Gravity.CENTER);
         info.setPadding(30, 22, 30, 0);
         page.addView(info);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(page);
+        settingsDialog.setContentView(scroll);
+        settingsDialog.show();
+        applyDialogBrightness(settingsDialog);
+        scheduleAutomaticReset();
+    }
+
+    private String installedVersionLabel() {
+        try {
+            android.content.pm.PackageInfo info = getPackageManager()
+                    .getPackageInfo(getPackageName(), 0);
+            return "Installiert: DennisOS " + info.versionName
+                    + " (" + info.versionCode + ")";
+        } catch (Exception exception) {
+            return "Installierte Version konnte nicht gelesen werden";
+        }
+    }
+
+    private void showSyncSettings() {
+        if (settingsDialog != null && settingsDialog.isShowing()) {
+            settingsDialog.dismiss();
+        }
+        settingsDialog = new Dialog(
+                this,
+                android.R.style.Theme_Holo_Light_NoActionBar_Fullscreen
+        );
+        LinearLayout page = createSettingsPage("Synchronisierung");
+
+        page.addView(createSettingTitle("Wenn das Tolino angesteckt ist"));
+        final TextView pluggedValue = createSettingValue(
+                pluggedSyncSeconds + " Sekunden"
+        );
+        page.addView(pluggedValue);
+        SeekBar pluggedDelay = new SeekBar(this);
+        pluggedDelay.setMax(55);
+        pluggedDelay.setProgress(Math.max(0, pluggedSyncSeconds - 5));
+        pluggedDelay.setPadding(50, 2, 50, 10);
+        pluggedDelay.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                pluggedSyncSeconds = progress + 5;
+                pluggedValue.setText(pluggedSyncSeconds + " Sekunden");
+                saveDisplaySettings();
+                rescheduleAutomaticSync();
+            }
+        });
+        page.addView(pluggedDelay);
+
+        page.addView(createSettingTitle("Im Akkubetrieb"));
+        final TextView batteryValue = createSettingValue(
+                batterySyncMinutes + " Minuten"
+        );
+        page.addView(batteryValue);
+        SeekBar batteryDelay = new SeekBar(this);
+        batteryDelay.setMax(59);
+        batteryDelay.setProgress(Math.max(0, batterySyncMinutes - 1));
+        batteryDelay.setPadding(50, 2, 50, 10);
+        batteryDelay.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override public void changed(int progress) {
+                batterySyncMinutes = progress + 1;
+                batteryValue.setText(batterySyncMinutes + " Minuten");
+                saveDisplaySettings();
+                rescheduleAutomaticSync();
+            }
+        });
+        page.addView(batteryDelay);
+
+        TextView now = createSettingsMenuButtonText("Jetzt synchronisieren");
+        now.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                settingsDialog.dismiss();
+                runSync();
+                rescheduleAutomaticSync();
+            }
+        });
+        page.addView(now);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -3730,7 +3825,7 @@ public class MainActivity extends Activity {
 
                     long nextSync =
                             lastSync
-                                    + SYNC_INTERVAL_MS;
+                                    + currentSyncIntervalMs();
 
                     long remaining =
                             nextSync
@@ -3744,17 +3839,19 @@ public class MainActivity extends Activity {
                         );
 
                     } else {
-                        long minutes =
-                                (remaining + 59999L)
-                                        / 60000L;
-
-                        countdownText.setText(
-                                String.format(
-                                        Locale.GERMAN,
-                                        "Nächste Synchronisierung in %d Min.",
-                                        minutes
-                                )
-                        );
+                        if (remaining < 60000L) {
+                            long seconds = (remaining + 999L) / 1000L;
+                            countdownText.setText(
+                                    "Nächste Synchronisierung in "
+                                            + seconds + " Sek."
+                            );
+                        } else {
+                            long minutes = (remaining + 59999L) / 60000L;
+                            countdownText.setText(
+                                    "Nächste Synchronisierung in "
+                                            + minutes + " Min."
+                            );
+                        }
                     }
 
                     countdownHandler.postDelayed(
@@ -3835,6 +3932,11 @@ public class MainActivity extends Activity {
                         || status
                         == BatteryManager.BATTERY_STATUS_FULL;
 
+        if (deviceCharging != charging) {
+            deviceCharging = charging;
+            rescheduleAutomaticSync();
+        }
+
         batteryText.setText(
                 charging
                         ? "⚡ Akku "
@@ -3854,10 +3956,21 @@ public class MainActivity extends Activity {
 
                     syncHandler.postDelayed(
                             this,
-                            SYNC_INTERVAL_MS
+                            currentSyncIntervalMs()
                     );
                 }
             };
+
+    private long currentSyncIntervalMs() {
+        return deviceCharging
+                ? Math.max(5, pluggedSyncSeconds) * 1000L
+                : Math.max(1, batterySyncMinutes) * 60L * 1000L;
+    }
+
+    private void rescheduleAutomaticSync() {
+        syncHandler.removeCallbacks(automaticSync);
+        syncHandler.postDelayed(automaticSync, currentSyncIntervalMs());
+    }
 
     private void runSync() {
         if (syncRunning) {
