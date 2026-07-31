@@ -1,7 +1,7 @@
 {
-  "versionCode": 53,
-  "versionName": "3.4.18",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=53",
-  "sha256": "eae32188daefe25133d46260bb1097032410863f50d32e229e7ee7470115b16a",
+  "versionCode": 54,
+  "versionName": "3.4.19",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=54",
+  "sha256": "752a2eccacc9dbc8907e2f511bcbce71083257e729819b18b27f8531e92aeee3",
   "notes": "Warnungen erscheinen jetzt zuerst als kurze Tagesliste und lassen sich einzeln aufklappen. Neu sind außerdem ein zufälliger iCloud-Foto-Bildschirmschoner sowie übersichtliche Untermenüs für Licht, Nachtmodus, Bildschirmschoner, Synchronisierung und Updates."
 }
