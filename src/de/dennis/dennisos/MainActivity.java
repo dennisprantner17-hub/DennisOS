@@ -2786,7 +2786,7 @@ public class MainActivity extends Activity {
 
     private void applyScreensaverLight() {
         if (!screensaverLightOn) {
-            setLightState(false);
+            setScreensaverLightState(false);
             return;
         }
 
@@ -2804,10 +2804,29 @@ public class MainActivity extends Activity {
         }
 
         if (inside) {
-            setLightState(true);
+            setScreensaverLightState(true);
         } else {
             applyNightBrightness();
+            setScreensaverDialogBrightness(lightCurrentlyOn);
         }
+    }
+
+    private void setScreensaverLightState(boolean on) {
+        setLightState(on);
+        setScreensaverDialogBrightness(on);
+    }
+
+    private void setScreensaverDialogBrightness(boolean on) {
+        if (screensaverDialog == null
+                || screensaverDialog.getWindow() == null) {
+            return;
+        }
+        WindowManager.LayoutParams params =
+                screensaverDialog.getWindow().getAttributes();
+        params.screenBrightness = on
+                ? Math.max(0.01f, brightnessPercent / 100.0f)
+                : 0.0f;
+        screensaverDialog.getWindow().setAttributes(params);
     }
 
     private void showSettingsFullscreen() {
