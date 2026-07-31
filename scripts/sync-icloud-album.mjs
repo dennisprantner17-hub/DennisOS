@@ -7,29 +7,6 @@ const outputDirectory = "screensaver";
 
 await fs.mkdir(outputDirectory, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
-const page = await browser.newPage({ locale: "de-AT" });
-await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 90000 });
-await page.waitForFunction(
-  () => document.querySelectorAll('img[src^="blob:"]').length > 0,
-  { timeout: 90000 }
-);
-
-const encodedImages = await page.locator('img[src^="blob:"]').evaluateAll(
-  async (images) => Promise.all(images.map(async (image) => {
-    const response = await fetch(image.src);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    let binary = "";
-    const chunkSize = 8192;
-    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-    }
-    return btoa(binary);
-  }))
-);
-
-await browser.close();
-
 const oldEntries = await fs.readdir(outputDirectory).catch(() => []);
 for (const name of oldEntries) {
   if (/^icloud-\d+\.jpg$/.test(name)) {
@@ -37,17 +14,34 @@ for (const name of oldEntries) {
   }
 }
 
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage({
+  locale: "de-AT",
+  viewport: { width: 2400, height: 1600 },
+  deviceScaleFactor: 1
+});
+await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 90000 });
+await page.waitForFunction(
+  () => document.querySelectorAll('img[src^="blob:"]').length > 0,
+  { timeout: 90000 }
+);
+
+const imageLocators = page.locator('img[src^="blob:"]');
+const imageCount = await imageLocators.count();
 const imageUrls = [];
-for (let index = 0; index < encodedImages.length; index++) {
+for (let index = 0; index < imageCount; index++) {
   const fileName = `icloud-${index + 1}.jpg`;
-  await fs.writeFile(
-    path.join(outputDirectory, fileName),
-    Buffer.from(encodedImages[index], "base64")
-  );
+  await imageLocators.nth(index).screenshot({
+    path: path.join(outputDirectory, fileName),
+    type: "jpeg",
+    quality: 88
+  });
   imageUrls.push(
     `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
   );
 }
+
+await browser.close();
 
 await fs.writeFile(
   "screensaver.json",
