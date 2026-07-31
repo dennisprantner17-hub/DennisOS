@@ -43,6 +43,14 @@ public final class UpdateManager {
             final Activity activity,
             final boolean showUpToDateMessage
     ) {
+        checkForUpdate(activity, showUpToDateMessage, false);
+    }
+
+    public static void checkForUpdate(
+            final Activity activity,
+            final boolean showUpToDateMessage,
+            final boolean automaticDownload
+    ) {
         if (checkRunning || activity == null) {
             return;
         }
@@ -155,10 +163,11 @@ public final class UpdateManager {
                     return;
                 }
 
-                showUpdateDialog(
-                        activity,
-                        result.info
-                );
+                if (automaticDownload) {
+                    downloadUpdate(activity, result.info);
+                } else {
+                    showUpdateDialog(activity, result.info);
+                }
             }
         }.execute();
     }
