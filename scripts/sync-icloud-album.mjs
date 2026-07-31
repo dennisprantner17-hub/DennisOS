@@ -18,7 +18,9 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({
   locale: "de-AT",
   viewport: { width: 2400, height: 1600 },
-  deviceScaleFactor: 1
+  // iCloud zeigt die Fotos in der Webansicht nur relativ klein an. Eine hohe
+  // Ausgabedichte erhält beim Screenshot genügend Pixel für das Tolino-Display.
+  deviceScaleFactor: 4
 });
 await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 90000 });
 await page.waitForFunction(
@@ -61,7 +63,7 @@ for (let index = 0; index < albumCount; index++) {
   await largest.screenshot({
     path: path.join(outputDirectory, fileName),
     type: "jpeg",
-    quality: 88
+    quality: 95
   });
   imageUrls.push(
     `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
