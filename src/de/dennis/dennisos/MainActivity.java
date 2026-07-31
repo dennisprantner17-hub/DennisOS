@@ -848,9 +848,11 @@ public class MainActivity extends Activity {
         if (action == MotionEvent.ACTION_DOWN) {
             scheduleScreensaver();
             if (autoLightOffEnabled) {
-                boolean wasSleeping = autoLightSleeping || !lightCurrentlyOn;
+                boolean wasSleeping = autoLightSleeping;
                 autoLightSleeping = false;
-                setLightState(true);
+                if (wasSleeping) {
+                    setLightState(true);
+                }
                 scheduleAutomaticLightOff();
                 if (wasSleeping) {
                     consumeWakeGesture = true;
@@ -870,6 +872,7 @@ public class MainActivity extends Activity {
 
         if (action == MotionEvent.ACTION_DOWN
                 && isNightTime()
+                && manualLightOverride == null
                 && !lightCurrentlyOn) {
 
             wakeNightLightTemporarily();
