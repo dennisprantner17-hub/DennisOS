@@ -1,7 +1,7 @@
 {
-  "versionCode": 35,
-  "versionName": "3.4 Fehlerbehebungen",
+  "versionCode": 37,
+  "versionName": "3.4.2",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk",
-  "sha256": "WIRD_BEIM_BAU_AUTOMATISCH_EINGETRAGEN",
+  "sha256": "a184fe37f5da2271a73f4a30e9923caca35d6ece791658279158761a5d6a5743",
   "notes": "Helligkeit reagiert sofort. Der erste Druck bei ausgeschaltetem Nachtlicht weckt nur den Bildschirm. Fehlende Termine mit Uhrzeit werden wieder angezeigt. Die Wetterdetailansicht wurde kompakter gestaltet."
 }
