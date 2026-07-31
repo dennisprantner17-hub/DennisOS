@@ -145,6 +145,7 @@ public class MainActivity extends Activity {
     private boolean deviceCharging = false;
     private int pluggedSyncSeconds = 10;
     private int batterySyncMinutes = 15;
+    private long syncMonitoringStartedAt = 0L;
 
     private GestureDetector gestureDetector;
 
@@ -168,6 +169,8 @@ public class MainActivity extends Activity {
         );
 
         loadDisplaySettings();
+
+        syncMonitoringStartedAt = System.currentTimeMillis();
 
         lastNightState = isNightTime();
 
@@ -3823,6 +3826,21 @@ public class MainActivity extends Activity {
                                     MainActivity.this
                             );
 
+                    if (deviceCharging) {
+                        updateChargingSyncStatus(lastSync);
+
+                        countdownHandler.postDelayed(
+                                this,
+                                1000L
+                        );
+
+                        return;
+                    }
+
+                    syncText.setVisibility(View.VISIBLE);
+                    countdownText.setVisibility(View.VISIBLE);
+                    syncNowButton.setVisibility(View.VISIBLE);
+
                     long nextSync =
                             lastSync
                                     + currentSyncIntervalMs();
@@ -3860,6 +3878,47 @@ public class MainActivity extends Activity {
                     );
                 }
             };
+
+    private void updateChargingSyncStatus(long lastSync) {
+        if (!deviceCharging) {
+            syncText.setVisibility(View.VISIBLE);
+            countdownText.setVisibility(View.VISIBLE);
+            syncNowButton.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        countdownText.setVisibility(View.GONE);
+        syncNowButton.setVisibility(View.GONE);
+
+        long now = System.currentTimeMillis();
+        long referenceTime = lastSync > 0
+                ? lastSync
+                : syncMonitoringStartedAt;
+
+        if (now - referenceTime < 120000L) {
+            syncText.setVisibility(View.GONE);
+            return;
+        }
+
+        syncText.setVisibility(View.VISIBLE);
+
+        if (lastSync > 0) {
+            String formattedTime =
+                    new SimpleDateFormat(
+                            "dd.MM. 'um' HH:mm",
+                            Locale.GERMAN
+                    ).format(new Date(lastSync));
+
+            syncText.setText(
+                    "Keine aktuelle Sync · letzte am "
+                            + formattedTime
+            );
+        } else {
+            syncText.setText(
+                    "Seit über 2 Min. keine Synchronisierung"
+            );
+        }
+    }
 
     private void startBatteryUpdates() {
         batteryUpdater.run();
@@ -3936,6 +3995,10 @@ public class MainActivity extends Activity {
             deviceCharging = charging;
             rescheduleAutomaticSync();
         }
+
+        updateChargingSyncStatus(
+                StorageHelper.loadSyncTime(this)
+        );
 
         batteryText.setText(
                 charging
