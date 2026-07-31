@@ -26,17 +26,13 @@ await page.waitForFunction(
   { timeout: 90000 }
 );
 
-const albumText = await page.locator("body").innerText();
-const albumCount = Math.max(
-  75,
-  Number(albumText.match(/(\d+)\s+(?:Elemente?|Items?)/i)?.[1] || 0)
-);
 const gridImages = page.locator('img[src^="blob:"]');
 await gridImages.first().click({ force: true });
 await page.waitForTimeout(3000);
 
 const imageUrls = [];
-for (let index = 0; index < albumCount; index++) {
+const seenImageSources = new Set();
+for (let index = 0; index < 500; index++) {
   const fileName = `icloud-${index + 1}.jpg`;
   const candidates = page.locator('img[src^="blob:"]');
   let largest = candidates.first();
@@ -51,6 +47,11 @@ for (let index = 0; index < albumCount; index++) {
       largestArea = area;
     }
   }
+  const imageSource = await largest.getAttribute("src");
+  if (!imageSource || seenImageSources.has(imageSource)) {
+    break;
+  }
+  seenImageSources.add(imageSource);
   await largest.screenshot({
     path: path.join(outputDirectory, fileName),
     type: "jpeg",
