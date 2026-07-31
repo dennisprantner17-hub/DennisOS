@@ -1,0 +1,83 @@
+name: DennisOS automatisch bauen
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - DennisOS-update.apk
+      - version.json
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DENNISOS_VERSION_CODE: ${{ 35 + github.run_number }}
+      DENNISOS_VERSION_NAME: 3.4.${{ github.run_number }}
+
+    steps:
+      - name: Projekt laden
+        uses: actions/checkout@v4
+
+      - name: Java einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: Android 4.4 installieren
+        run: sdkmanager "platforms;android-19"
+
+      - name: Signierschlüssel einrichten
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          mkdir -p "$HOME/.android"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+
+      - name: APK bauen
+        run: |
+          chmod +x gradlew
+          ./gradlew clean assembleDebug
+
+      - name: Update-Dateien erzeugen
+        run: |
+          cp build/outputs/apk/debug/DennisOS-debug.apk DennisOS-update.apk
+          SHA256=$(sha256sum DennisOS-update.apk | cut -d ' ' -f 1)
+          python3 - "$SHA256" <<'PY'
+          import json
+          import os
+          import sys
+
+          path = "version.json"
+          with open(path, encoding="utf-8") as file:
+              data = json.load(file)
+          data["versionCode"] = int(os.environ["DENNISOS_VERSION_CODE"])
+          data["versionName"] = os.environ["DENNISOS_VERSION_NAME"]
+          data["sha256"] = sys.argv[1]
+          with open(path, "w", encoding="utf-8") as file:
+              json.dump(data, file, ensure_ascii=False, indent=2)
+              file.write("\n")
+          PY
+
+      - name: Fertiges Update veröffentlichen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DennisOS-update.apk version.json
+          git diff --cached --quiet || git commit -m "DennisOS Update automatisch bauen"
+          git push
+
+      - name: APK als Download bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: DennisOS-${{ env.DENNISOS_VERSION_NAME }}
+          path: DennisOS-update.apk
