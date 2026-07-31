@@ -334,6 +334,25 @@ public class MainActivity extends Activity {
 
         leftButtons.addView(settingsButton);
 
+        TextView appsButton = createIconButton("Apps");
+        appsButton.setTextSize(15);
+        appsButton.setGravity(Gravity.CENTER);
+        appsButton.setLayoutParams(
+                new LinearLayout.LayoutParams(86, 66)
+        );
+        appsButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override public void onClick(View view) {
+                        startActivity(new Intent(
+                                MainActivity.this,
+                                AppsActivity.class
+                        ));
+                        scheduleAutomaticReset();
+                    }
+                }
+        );
+        leftButtons.addView(appsButton);
+
         warningCard = new TextView(this);
         warningCard.setTextSize(11);
         warningCard.setTextColor(Color.BLACK);
