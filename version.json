@@ -1,7 +1,7 @@
 {
-  "versionCode": 34,
-  "versionName": "3.3.2 OTA-Test",
+  "versionCode": 35,
+  "versionName": "3.4 Fehlerbehebungen",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk",
-  "sha256": "a0cea0cad4f5c295ef944e6c35e0f4c2620f11c10572944ecd910ac171b00e55",
-  "notes": "Compilerfehler behoben. Vollbild-Einstellungen, Helligkeitsregler, Nachtzeiten, eigene Update-Suche, bessere Wetterdetails und mehr sichtbare Kalendereinträge."
+  "sha256": "WIRD_BEIM_BAU_AUTOMATISCH_EINGETRAGEN",
+  "notes": "Helligkeit reagiert sofort. Der erste Druck bei ausgeschaltetem Nachtlicht weckt nur den Bildschirm. Fehlende Termine mit Uhrzeit werden wieder angezeigt. Die Wetterdetailansicht wurde kompakter gestaltet."
 }

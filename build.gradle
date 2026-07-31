@@ -1,0 +1,42 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.2'
+    }
+}
+
+apply plugin: 'com.android.application'
+
+android {
+    namespace "de.dennis.dennisos"
+    compileSdk 19
+
+    defaultConfig {
+        applicationId "de.dennis.dennisos"
+        minSdk 19
+        targetSdk 19
+        versionCode Integer.parseInt(System.getenv("DENNISOS_VERSION_CODE") ?: "35")
+        versionName System.getenv("DENNISOS_VERSION_NAME") ?: "3.4-Fixes"
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            res.srcDirs = ['res']
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'commons-io:commons-io:2.11.0'
+}
