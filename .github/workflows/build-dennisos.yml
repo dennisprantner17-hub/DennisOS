@@ -47,7 +47,7 @@ jobs:
       - name: Versionsnummer berechnen
         run: |
           echo "DENNISOS_VERSION_CODE=$((35 + DENNISOS_BUILD_NUMBER))" >> "$GITHUB_ENV"
-          echo "DENNISOS_VERSION_NAME=3.4.${DENNISOS_BUILD_NUMBER}" >> "$GITHUB_ENV"
+          echo "DENNISOS_VERSION_NAME=4.0.$((DENNISOS_BUILD_NUMBER - 44))" >> "$GITHUB_ENV"
 
       - name: Signierschlüssel einrichten
         env:
