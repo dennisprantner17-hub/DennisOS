@@ -2,15 +2,6 @@ name: DennisOS automatisch bauen
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths-ignore:
-      - DennisOS-update.apk
-      - version.json
-      - screensaver.json
-      - screensaver/**
-      - scripts/**
-      - .github/workflows/sync-screensaver.yml
 
 permissions:
   contents: write
