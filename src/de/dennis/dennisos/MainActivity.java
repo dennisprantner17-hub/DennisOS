@@ -114,8 +114,12 @@ public class MainActivity extends Activity {
     private Boolean manualLightOverride = null;
     private boolean lastNightState = false;
     private boolean lightCurrentlyOn = true;
-    private int nightStartHour = 22;
-    private int nightEndHour = 6;
+    private final int[] nightStartHours = {
+            22, 22, 22, 22, 22, 23, 23
+    };
+    private final int[] nightEndHours = {
+            6, 6, 6, 6, 6, 8, 8
+    };
     private int brightnessPercent = 100;
     private boolean syncRunning = false;
     private boolean updateCheckRequestedByUser = false;
@@ -1347,22 +1351,38 @@ public class MainActivity extends Activity {
             };
 
     private boolean isNightTime() {
-        int hour =
-                Calendar.getInstance().get(
-                        Calendar.HOUR_OF_DAY
-                );
+        Calendar now = Calendar.getInstance();
+        int hour = now.get(Calendar.HOUR_OF_DAY);
+        int today = scheduleIndexForCalendarDay(
+                now.get(Calendar.DAY_OF_WEEK)
+        );
+        int previous = (today + 6) % 7;
 
-        if (nightStartHour == nightEndHour) {
-            return false;
+        int todayStart = nightStartHours[today];
+        int todayEnd = nightEndHours[today];
+
+        if (todayStart < todayEnd
+                && hour >= todayStart
+                && hour < todayEnd) {
+            return true;
         }
 
-        if (nightStartHour > nightEndHour) {
-            return hour >= nightStartHour
-                    || hour < nightEndHour;
+        if (todayStart > todayEnd
+                && hour >= todayStart) {
+            return true;
         }
 
-        return hour >= nightStartHour
-                && hour < nightEndHour;
+        int previousStart = nightStartHours[previous];
+        int previousEnd = nightEndHours[previous];
+
+        return previousStart > previousEnd
+                && hour < previousEnd;
+    }
+
+    private int scheduleIndexForCalendarDay(
+            int calendarDay
+    ) {
+        return (calendarDay + 5) % 7;
     }
 
     private void applyNightBrightness() {
@@ -2399,17 +2419,27 @@ public class MainActivity extends Activity {
                         MODE_PRIVATE
                 );
 
-        nightStartHour =
-                preferences.getInt(
-                        "night_start_hour",
-                        22
-                );
+        int oldStart = preferences.getInt(
+                "night_start_hour",
+                22
+        );
+        int oldEnd = preferences.getInt(
+                "night_end_hour",
+                6
+        );
 
-        nightEndHour =
-                preferences.getInt(
-                        "night_end_hour",
-                        6
-                );
+        for (int index = 0;
+             index < 7;
+             index++) {
+            nightStartHours[index] = preferences.getInt(
+                    "night_start_" + index,
+                    index < 5 ? oldStart : 23
+            );
+            nightEndHours[index] = preferences.getInt(
+                    "night_end_" + index,
+                    index < 5 ? oldEnd : 8
+            );
+        }
 
         brightnessPercent =
                 preferences.getInt(
@@ -2419,23 +2449,30 @@ public class MainActivity extends Activity {
     }
 
     private void saveDisplaySettings() {
-        getSharedPreferences(
+        SharedPreferences.Editor editor = getSharedPreferences(
                 SETTINGS_PREFS,
                 MODE_PRIVATE
-        ).edit()
-                .putInt(
-                        "night_start_hour",
-                        nightStartHour
-                )
-                .putInt(
-                        "night_end_hour",
-                        nightEndHour
-                )
-                .putInt(
-                        "brightness_percent",
-                        brightnessPercent
-                )
-                .apply();
+        ).edit();
+
+        editor.putInt(
+                "brightness_percent",
+                brightnessPercent
+        );
+
+        for (int index = 0;
+             index < 7;
+             index++) {
+            editor.putInt(
+                    "night_start_" + index,
+                    nightStartHours[index]
+            );
+            editor.putInt(
+                    "night_end_" + index,
+                    nightEndHours[index]
+            );
+        }
+
+        editor.apply();
     }
 
     private void showSettingsFullscreen() {
@@ -2621,99 +2658,87 @@ public class MainActivity extends Activity {
                 )
         );
 
-        final TextView startValue =
-                createSettingValue(
-                        formatHour(
-                                nightStartHour
-                        )
-                );
+        String[] scheduleDays = {
+                "Montag", "Dienstag", "Mittwoch",
+                "Donnerstag", "Freitag", "Samstag",
+                "Sonntag"
+        };
 
-        page.addView(
-                createSettingLabel(
-                        "Licht ausschalten ab"
-                )
-        );
+        for (int dayIndex = 0;
+             dayIndex < scheduleDays.length;
+             dayIndex++) {
+            final int selectedDay = dayIndex;
 
-        page.addView(startValue);
+            page.addView(
+                    createSettingTitle(
+                            scheduleDays[dayIndex]
+                    )
+            );
 
-        SeekBar startSlider =
-                new SeekBar(this);
+            final TextView dayTimes = createSettingValue(
+                    formatHour(nightStartHours[dayIndex])
+                            + " bis "
+                            + formatHour(nightEndHours[dayIndex])
+            );
+            page.addView(dayTimes);
 
-        startSlider.setMax(23);
-        startSlider.setProgress(
-                nightStartHour
-        );
+            page.addView(createSettingLabel(
+                    "Licht aus ab"
+            ));
 
-        startSlider.setPadding(
-                50,
-                4,
-                50,
-                12
-        );
-
-        startSlider.setOnSeekBarChangeListener(
-                new SimpleSeekListener() {
-                    @Override
-                    public void changed(
-                            int progress
-                    ) {
-                        nightStartHour = progress;
-                        startValue.setText(
-                                formatHour(progress)
-                        );
-                        saveDisplaySettings();
+            SeekBar dayStartSlider = new SeekBar(this);
+            dayStartSlider.setMax(23);
+            dayStartSlider.setProgress(
+                    nightStartHours[dayIndex]
+            );
+            dayStartSlider.setPadding(50, 0, 50, 6);
+            dayStartSlider.setOnSeekBarChangeListener(
+                    new SimpleSeekListener() {
+                        @Override
+                        public void changed(int progress) {
+                            nightStartHours[selectedDay] = progress;
+                            dayTimes.setText(
+                                    formatHour(progress)
+                                            + " bis "
+                                            + formatHour(
+                                            nightEndHours[selectedDay]
+                                    )
+                            );
+                            saveDisplaySettings();
+                        }
                     }
-                }
-        );
+            );
+            page.addView(dayStartSlider);
 
-        page.addView(startSlider);
+            page.addView(createSettingLabel(
+                    "Licht an ab"
+            ));
 
-        final TextView endValue =
-                createSettingValue(
-                        formatHour(
-                                nightEndHour
-                        )
-                );
-
-        page.addView(
-                createSettingLabel(
-                        "Licht wieder einschalten ab"
-                )
-        );
-
-        page.addView(endValue);
-
-        SeekBar endSlider =
-                new SeekBar(this);
-
-        endSlider.setMax(23);
-        endSlider.setProgress(
-                nightEndHour
-        );
-
-        endSlider.setPadding(
-                50,
-                4,
-                50,
-                12
-        );
-
-        endSlider.setOnSeekBarChangeListener(
-                new SimpleSeekListener() {
-                    @Override
-                    public void changed(
-                            int progress
-                    ) {
-                        nightEndHour = progress;
-                        endValue.setText(
-                                formatHour(progress)
-                        );
-                        saveDisplaySettings();
+            SeekBar dayEndSlider = new SeekBar(this);
+            dayEndSlider.setMax(23);
+            dayEndSlider.setProgress(
+                    nightEndHours[dayIndex]
+            );
+            dayEndSlider.setPadding(50, 0, 50, 10);
+            dayEndSlider.setOnSeekBarChangeListener(
+                    new SimpleSeekListener() {
+                        @Override
+                        public void changed(int progress) {
+                            nightEndHours[selectedDay] = progress;
+                            dayTimes.setText(
+                                    formatHour(
+                                            nightStartHours[selectedDay]
+                                    )
+                                            + " bis "
+                                            + formatHour(progress)
+                            );
+                            saveDisplaySettings();
+                        }
                     }
-                }
-        );
-
-        page.addView(endSlider);
+            );
+            page.addView(dayEndSlider);
+            page.addView(createHorizontalLine());
+        }
         page.addView(createHorizontalLine());
 
         TextView updateButton =
@@ -2793,7 +2818,10 @@ public class MainActivity extends Activity {
 
         page.addView(note);
 
-        settingsDialog.setContentView(page);
+        ScrollView settingsScroll = new ScrollView(this);
+        settingsScroll.setFillViewport(true);
+        settingsScroll.addView(page);
+        settingsDialog.setContentView(settingsScroll);
 
         settingsDialog.setOnDismissListener(
                 new DialogInterface.OnDismissListener() {
@@ -3567,6 +3595,13 @@ public class MainActivity extends Activity {
                 8
         );
 
+        page.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT
+                )
+        );
+
         LinearLayout top =
                 new LinearLayout(this);
 
@@ -3589,7 +3624,7 @@ public class MainActivity extends Activity {
         close.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         58,
-                        150
+                        180
                 )
         );
 
@@ -3625,7 +3660,7 @@ public class MainActivity extends Activity {
         hero.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         0,
-                        150,
+                        180,
                         1.20f
                 )
         );
@@ -3707,7 +3742,7 @@ public class MainActivity extends Activity {
         metrics.setLayoutParams(
                 new LinearLayout.LayoutParams(
                         0,
-                        150,
+                        180,
                         1
                 )
         );
@@ -3757,7 +3792,7 @@ public class MainActivity extends Activity {
         top.addView(close);
         top.addView(hero);
         top.addView(
-                createVerticalLine(136)
+                createVerticalLine(170)
         );
         top.addView(metrics);
 
@@ -3954,7 +3989,8 @@ public class MainActivity extends Activity {
                 lower,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        132
+                        0,
+                        1
                 )
         );
 
@@ -4033,7 +4069,7 @@ public class MainActivity extends Activity {
                 new GridLayout.LayoutParams();
 
         params.width = 198;
-        params.height = 46;
+        params.height = 56;
 
         cell.setLayoutParams(params);
         grid.addView(cell);
