@@ -15,8 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DENNISOS_VERSION_CODE: ${{ 35 + github.run_number }}
-      DENNISOS_VERSION_NAME: 3.4.${{ github.run_number }}
+      DENNISOS_BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
       - name: Projekt laden
@@ -33,6 +32,11 @@ jobs:
 
       - name: Android 4.4 installieren
         run: sdkmanager "platforms;android-19"
+
+      - name: Versionsnummer berechnen
+        run: |
+          echo "DENNISOS_VERSION_CODE=$((35 + DENNISOS_BUILD_NUMBER))" >> "$GITHUB_ENV"
+          echo "DENNISOS_VERSION_NAME=3.4.${DENNISOS_BUILD_NUMBER}" >> "$GITHUB_ENV"
 
       - name: Signierschlüssel einrichten
         env:
