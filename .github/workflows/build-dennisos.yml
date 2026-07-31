@@ -29,6 +29,9 @@ jobs:
       - name: Projekt laden
         uses: actions/checkout@v4
 
+      - name: Letzten veröffentlichten Stand übernehmen
+        run: git pull --rebase origin main
+
       - name: Java einrichten
         uses: actions/setup-java@v4
         with:
@@ -98,10 +101,7 @@ jobs:
           git add DennisOS-update.apk version.json
           git diff --cached --quiet || git commit -m "DennisOS Update automatisch bauen"
           git restore gradlew
-          for attempt in 1 2 3; do
-            git pull --rebase origin main
-            git push && break
-          done
+          git push
 
       - name: APK als Download bereitstellen
         uses: actions/upload-artifact@v4
