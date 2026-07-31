@@ -2785,6 +2785,11 @@ public class MainActivity extends Activity {
     }
 
     private void applyScreensaverLight() {
+        if (!screensaverLightOn) {
+            setLightState(false);
+            return;
+        }
+
         Calendar now = Calendar.getInstance();
         int hour = now.get(Calendar.HOUR_OF_DAY);
         boolean inside;
@@ -2799,7 +2804,7 @@ public class MainActivity extends Activity {
         }
 
         if (inside) {
-            setLightState(screensaverLightOn);
+            setLightState(true);
         } else {
             applyNightBrightness();
         }
