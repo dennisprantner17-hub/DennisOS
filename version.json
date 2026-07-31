@@ -1,7 +1,7 @@
 {
-  "versionCode": 42,
-  "versionName": "3.4.7",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=42",
-  "sha256": "129272340232d7f82b22371adbce84c1911c2da9a3661fa60a436aba95f9d66f",
+  "versionCode": 43,
+  "versionName": "3.4.8",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=43",
+  "sha256": "e779e28a18566495d2689df7927e0ec35ae18fb49fe0232caf5c5849f3d6d175",
   "notes": "Die Wetteransicht verwendet eine feste Ganzseitenaufteilung. Elternbereiche sind jetzt größer als ihre Inhalte, sodass Wetterwerte und Stundenzeilen nicht mehr abgeschnitten werden."
 }
