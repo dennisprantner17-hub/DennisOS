@@ -3,5 +3,5 @@
   "versionName": "3.4.6",
   "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=41",
   "sha256": "00d92cb124fe068acbe7dc3e3c1ae43dbfd19211c1e1cc3085d9f0a0d7fb1c99",
-  "notes": "Wetterdetails nutzen jetzt die ganze Seite und abgeschnittene Wetterwerte sind korrigiert. Für jeden Wochentag können eigene Nachtmodus-Zeiten eingestellt werden."
+  "notes": "Die Wetterdetailseite ist vollständig scrollbar, sodass keine Werte mehr abgeschnitten werden. Zweiwöchentlich wiederkehrende Kalendertermine und Ausnahmen werden jetzt korrekt angezeigt."
 }
