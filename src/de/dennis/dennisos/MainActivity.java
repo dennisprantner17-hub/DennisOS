@@ -823,6 +823,14 @@ public class MainActivity extends Activity {
         int action =
                 event.getActionMasked();
 
+        // Manche ältere Tolino-Geräte liefern nach dem Aufwecken kein
+        // ACTION_UP. Ein neuer Fingertipp muss deshalb einen eventuell
+        // hängen gebliebenen Aufweck-Zustand immer freigeben.
+        if (action == MotionEvent.ACTION_DOWN
+                && consumeWakeGesture) {
+            consumeWakeGesture = false;
+        }
+
         if (action == MotionEvent.ACTION_DOWN
                 && screensaverDialog != null
                 && screensaverDialog.isShowing()) {
@@ -1500,6 +1508,9 @@ public class MainActivity extends Activity {
     }
 
     private void toggleLight() {
+        consumeWakeGesture = false;
+        autoLightSleeping = false;
+
         final boolean newState =
                 !lightCurrentlyOn;
 
@@ -1514,6 +1525,7 @@ public class MainActivity extends Activity {
         );
 
         setLightState(newState);
+        scheduleAutomaticLightOff();
     }
 
     private void wakeNightLightTemporarily() {
@@ -2759,20 +2771,9 @@ public class MainActivity extends Activity {
                         applyNightBrightness();
                         scheduleScreensaver();
                         scheduleAutomaticLightOff();
-                        rootLayout.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                rootLayout.setEnabled(true);
-                                rootLayout.setClickable(true);
-                                rootLayout.setFocusableInTouchMode(true);
-                                rootLayout.requestFocus();
-                                getWindow().getDecorView().setSystemUiVisibility(
-                                        View.SYSTEM_UI_FLAG_FULLSCREEN
-                                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                                                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                                );
-                            }
-                        }, 100L);
+                        restoreTouchInteraction.run();
+                        rootLayout.postDelayed(restoreTouchInteraction, 120L);
+                        rootLayout.postDelayed(restoreTouchInteraction, 500L);
                     }
                 }
         );
@@ -2784,6 +2785,32 @@ public class MainActivity extends Activity {
                 Math.max(1, screensaverChangeMinutes) * 60L * 1000L
         );
     }
+
+    private final Runnable restoreTouchInteraction = new Runnable() {
+        @Override
+        public void run() {
+            consumeWakeGesture = false;
+
+            if (rootLayout != null) {
+                rootLayout.setEnabled(true);
+                rootLayout.setClickable(true);
+                rootLayout.clearFocus();
+            }
+
+            if (lightButton != null) {
+                lightButton.setEnabled(true);
+                lightButton.setClickable(true);
+            }
+
+            View decor = getWindow().getDecorView();
+            decor.setEnabled(true);
+            decor.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            );
+        }
+    };
 
     private void loadScreensaverImage() {
         ScreensaverSync.loadRandom(new ScreensaverSync.Callback() {
