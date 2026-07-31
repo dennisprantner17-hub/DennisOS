@@ -33,6 +33,7 @@ for (let pass = 0; pass < 4; pass++) {
   await page.mouse.wheel(0, 1400);
   await page.waitForTimeout(2000);
 }
+await page.evaluate(() => window.scrollTo(0, 0));
 await page.waitForTimeout(5000);
 
 const gridImages = page.locator('img[src^="blob:"]');
