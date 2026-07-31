@@ -27,7 +27,10 @@ await page.waitForFunction(
 );
 
 const albumText = await page.locator("body").innerText();
-const albumCount = Number(albumText.match(/(\d+)\s+Elemente?/)?.[1] || 1);
+const albumCount = Math.max(
+  75,
+  Number(albumText.match(/(\d+)\s+(?:Elemente?|Items?)/i)?.[1] || 0)
+);
 const gridImages = page.locator('img[src^="blob:"]');
 await gridImages.first().click({ force: true });
 await page.waitForTimeout(3000);
