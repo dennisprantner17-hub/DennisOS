@@ -1,7 +1,7 @@
 {
-  "versionCode": 41,
-  "versionName": "3.4.6",
-  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=41",
-  "sha256": "00d92cb124fe068acbe7dc3e3c1ae43dbfd19211c1e1cc3085d9f0a0d7fb1c99",
+  "versionCode": 42,
+  "versionName": "3.4.7",
+  "apkUrl": "https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/DennisOS-update.apk?v=42",
+  "sha256": "129272340232d7f82b22371adbce84c1911c2da9a3661fa60a436aba95f9d66f",
   "notes": "Die Wetterdetailseite ist vollständig scrollbar, sodass keine Werte mehr abgeschnitten werden. Zweiwöchentlich wiederkehrende Kalendertermine und Ausnahmen werden jetzt korrekt angezeigt."
 }
