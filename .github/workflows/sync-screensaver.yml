@@ -1,0 +1,37 @@
+name: iCloud-Bilder für DennisOS aktualisieren
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Projekt laden
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Browser einrichten
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Öffentliches iCloud-Album synchronisieren
+        run: node scripts/sync-icloud-album.mjs
+
+      - name: Bilder veröffentlichen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add screensaver screensaver.json
+          git diff --cached --quiet || git commit -m "iCloud-Bilder automatisch aktualisieren"
+          git push
