@@ -41,6 +41,8 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
+    private static final float SAFE_LIGHT_OFF_BRIGHTNESS = 0.01f;
+
     private static final long SYNC_INTERVAL_MS =
             15L * 60L * 1000L;
 
@@ -1598,10 +1600,10 @@ public class MainActivity extends Activity {
         params.screenBrightness =
                 on
                         ? Math.max(
-                                0.01f,
+                                SAFE_LIGHT_OFF_BRIGHTNESS,
                                 brightnessPercent / 100.0f
                         )
-                        : 0.0f;
+                        : SAFE_LIGHT_OFF_BRIGHTNESS;
 
         getWindow().setAttributes(
                 params
@@ -2926,8 +2928,9 @@ public class MainActivity extends Activity {
         WindowManager.LayoutParams params =
                 screensaverDialog.getWindow().getAttributes();
         params.screenBrightness = on
-                ? Math.max(0.01f, brightnessPercent / 100.0f)
-                : 0.0f;
+                ? Math.max(SAFE_LIGHT_OFF_BRIGHTNESS,
+                        brightnessPercent / 100.0f)
+                : SAFE_LIGHT_OFF_BRIGHTNESS;
         screensaverDialog.getWindow().setAttributes(params);
     }
 
@@ -5570,10 +5573,10 @@ public class MainActivity extends Activity {
         attributes.screenBrightness =
                 lightCurrentlyOn
                         ? Math.max(
-                                0.01f,
+                                SAFE_LIGHT_OFF_BRIGHTNESS,
                                 brightnessPercent / 100.0f
                         )
-                        : 0.0f;
+                        : SAFE_LIGHT_OFF_BRIGHTNESS;
 
         window.setAttributes(
                 attributes
@@ -6950,10 +6953,10 @@ public class MainActivity extends Activity {
             attributes.screenBrightness =
                     lightCurrentlyOn
                             ? Math.max(
-                                    0.01f,
+                                    SAFE_LIGHT_OFF_BRIGHTNESS,
                                     brightnessPercent / 100.0f
                             )
-                            : 0.0f;
+                            : SAFE_LIGHT_OFF_BRIGHTNESS;
 
             window.setAttributes(
                     attributes
