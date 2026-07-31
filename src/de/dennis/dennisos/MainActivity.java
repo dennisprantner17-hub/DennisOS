@@ -2865,6 +2865,7 @@ public class MainActivity extends Activity {
         settingsDialog.setContentView(scroll);
         settingsDialog.show();
         applyDialogBrightness(settingsDialog);
+        scheduleAutomaticReset();
     }
 
     private LinearLayout createSettingsPage(String titleText) {
@@ -3053,6 +3054,7 @@ public class MainActivity extends Activity {
         settingsDialog.setContentView(scroll);
         settingsDialog.show();
         applyDialogBrightness(settingsDialog);
+        scheduleAutomaticReset();
     }
 
     private TextView createSettingsMenuButtonText(String text) {
@@ -3476,6 +3478,7 @@ public class MainActivity extends Activity {
         applyDialogBrightness(
                 settingsDialog
         );
+        scheduleAutomaticReset();
     }
 
     private TextView createSettingTitle(
@@ -7013,6 +7016,12 @@ public class MainActivity extends Activity {
                             && warningDialog.isShowing()) {
 
                         warningDialog.dismiss();
+                    }
+
+                    if (settingsDialog != null
+                            && settingsDialog.isShowing()) {
+
+                        settingsDialog.dismiss();
                     }
 
                     if (fullscreenDayDialog != null
