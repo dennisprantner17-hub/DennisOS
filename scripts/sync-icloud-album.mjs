@@ -18,9 +18,7 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({
   locale: "de-AT",
   viewport: { width: 2400, height: 1600 },
-  // iCloud zeigt die Fotos in der Webansicht nur relativ klein an. Eine hohe
-  // Ausgabedichte erhält beim Screenshot genügend Pixel für das Tolino-Display.
-  deviceScaleFactor: 3
+  deviceScaleFactor: 1
 });
 await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 90000 });
 await page.waitForFunction(
@@ -28,13 +26,18 @@ await page.waitForFunction(
   { timeout: 90000 }
 );
 
-await page.waitForTimeout(500);
+// iCloud lädt weitere Albumkacheln verzögert und teilweise erst beim Scrollen.
+for (let pass = 0; pass < 4; pass++) {
+  await page.mouse.wheel(0, 1400);
+  await page.waitForTimeout(2000);
+}
+await page.waitForTimeout(5000);
 
+const albumCountText = await page.getByRole("heading", {
+  name: /Elemente/
+}).textContent();
+const albumCount = Number((albumCountText || "1").match(/\d+/)?.[0] || 1);
 const gridImages = page.locator('img[src^="blob:"]');
-const albumCount = Math.max(
-  1,
-  await gridImages.evaluateAll((images) => new Set(images.map((image) => image.src)).size)
-);
 await gridImages.first().click();
 await page.waitForTimeout(3000);
 
@@ -57,7 +60,7 @@ for (let index = 0; index < albumCount; index++) {
   await largest.screenshot({
     path: path.join(outputDirectory, fileName),
     type: "jpeg",
-    quality: 95
+    quality: 88
   });
   imageUrls.push(
     `https://raw.githubusercontent.com/dennisprantner17-hub/DennisOS/main/screensaver/${fileName}`
